@@ -1,0 +1,86 @@
+# Mặc định chỉ chạy hạ tầng: docker compose up -d
+# Chạy cả backend + chatbot trong Docker: docker compose --profile app up -d --build
+services:
+  mongo:
+    image: mongo:7
+    container_name: jobnet-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: jobnet-es
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.4
+    container_name: jobnet-kibana
+    restart: unless-stopped
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+  minio:
+    image: minio/minio:latest
+    container_name: jobnet-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  backend:
+    profiles: ["app"]
+    build: ../backend
+    container_name: jobnet-backend
+    env_file: ../backend/.env
+    environment:
+      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/jobnet?authSource=admin
+      ELASTICSEARCH_NODE: http://elasticsearch:9200
+      MINIO_ENDPOINT: minio
+      CHATBOT_URL: http://chatbot:8000
+    ports:
+      - "4000:4000"
+    depends_on:
+      - mongo
+      - elasticsearch
+      - minio
+
+  chatbot:
+    profiles: ["app"]
+    build: ../chatbot
+    container_name: jobnet-chatbot
+    env_file: ../chatbot/.env
+    environment:
+      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/jobnet?authSource=admin
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongo
+
+volumes:
+  mongo_data:
+  es_data:
+  minio_data:

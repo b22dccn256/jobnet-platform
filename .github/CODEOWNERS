@@ -1,0 +1,16 @@
+# Cấu hình người phụ trách duyệt PR theo thư mục
+/infra/                 @nmt-work
+/docs/SCHEMA.md         @nmt-work @b22dccn256
+/backend/src/modules/auth/        @nmt-work
+/backend/src/modules/admin/       @nmt-work
+/backend/src/modules/jobs/        @nmt-work
+/backend/src/modules/payments/    @nmt-work
+/backend/src/modules/recommendation/ @nmt-work
+/backend/src/modules/search/      @b22dccn256
+/backend/src/modules/storage/     @b22dccn256
+/backend/src/modules/chatbot/     @b22dccn256
+/backend/src/modules/market-insights/ @b22dccn256
+/chatbot/               @b22dccn256
+/crawler/               @b22dccn256
+
+
