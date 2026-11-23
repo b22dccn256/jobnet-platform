@@ -26,3 +26,6 @@ export class Application {
 }
 
 export const ApplicationSchema = SchemaFactory.createForClass(Application);
+
+ApplicationSchema.index({ job: 1, user: 1 }, { unique: true });
+ApplicationSchema.index({ user: 1, appliedAt: -1 });

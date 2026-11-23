@@ -1,39 +1,94 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums/role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { AuthUserPayload } from '../../common/interfaces/auth-user.interface';
+import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe';
 import { ApplicationService } from './applications.service';
+import {
+  CreateApplicationDto,
+  QueryApplicationDto,
+  UpdateApplicationStatusDto,
+} from './dto/application.dto';
 
-// TODO (Hà): gắn RolesGuard + @Roles(...) và DTO validate cho từng endpoint
+// Phụ trách: Hà (ứng viên) & Tuấn (nhà tuyển dụng)
 @ApiTags('applications')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('applications')
 export class ApplicationController {
   constructor(private readonly service: ApplicationService) {}
 
   @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  @Roles(Role.Candidate)
+  @ApiOperation({ summary: 'Ứng tuyển vào tin tuyển dụng (Ứng viên)' })
+  create(@CurrentUser() user: AuthUserPayload, @Body() dto: CreateApplicationDto) {
+    return this.service.apply(user.userId, dto);
   }
 
-  @Get()
-  findAll(@Query() q: PaginationDto) {
-    return this.service.findAll(q.page, q.limit);
+  @Get('me')
+  @Roles(Role.Candidate)
+  @ApiOperation({ summary: 'Xem lịch sử ứng tuyển của bản thân (Ứng viên)' })
+  myApplications(@CurrentUser() user: AuthUserPayload, @Query() q: QueryApplicationDto) {
+    return this.service.findMyApplications(user.userId, q);
+  }
+
+  @Get('employer')
+  @Roles(Role.Employer)
+  @ApiOperation({ summary: 'Danh sách đơn ứng tuyển vào các tin của công ty (Nhà tuyển dụng)' })
+  employerApplications(@CurrentUser() user: AuthUserPayload, @Query() q: QueryApplicationDto) {
+    return this.service.findForEmployer(user.userId, q);
+  }
+
+  @Get('job/:jobId')
+  @Roles(Role.Employer, Role.Admin)
+  @ApiOperation({ summary: 'Danh sách ứng viên ứng tuyển theo tin tuyển dụng' })
+  byJob(
+    @Param('jobId', ParseObjectIdPipe) jobId: string,
+    @CurrentUser() user: AuthUserPayload,
+    @Query() q: QueryApplicationDto,
+  ) {
+    return this.service.findByJob(jobId, user, q);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  @Roles(Role.Candidate, Role.Employer, Role.Admin)
+  @ApiOperation({ summary: 'Chi tiết một đơn ứng tuyển' })
+  findOne(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload,
+  ) {
+    return this.service.findOneAuthorized(id, user);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.service.update(id, body);
+  @Patch(':id/status')
+  @Roles(Role.Employer, Role.Admin)
+  @ApiOperation({ summary: 'Cập nhật trạng thái đơn ứng tuyển (Nhà tuyển dụng / Admin)' })
+  updateStatus(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload,
+    @Body() dto: UpdateApplicationStatusDto,
+  ) {
+    return this.service.updateStatus(id, user, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  @Roles(Role.Candidate, Role.Admin)
+  @ApiOperation({ summary: 'Rút đơn ứng tuyển (Ứng viên) hoặc xóa (Admin)' })
+  remove(@Param('id', ParseObjectIdPipe) id: string, @CurrentUser() user: AuthUserPayload) {
+    return this.service.withdraw(id, user);
   }
 }

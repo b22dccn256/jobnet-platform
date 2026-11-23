@@ -15,5 +15,6 @@
     "skipLibCheck": true,
     "strictNullChecks": false,
     "noImplicitAny": false
-  }
+  },
+  "exclude": ["node_modules", "dist", "dist-test", "test"]
 }

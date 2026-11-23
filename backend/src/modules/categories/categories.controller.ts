@@ -1,39 +1,65 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums/role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe';
 import { CategoryService } from './categories.service';
+import { CreateCategoryDto, QueryCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 
-// TODO (Tuấn): gắn RolesGuard + @Roles(...) và DTO validate cho từng endpoint
+// Phụ trách: Tuấn
 @ApiTags('categories')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('categories')
 export class CategoryController {
   constructor(private readonly service: CategoryService) {}
 
   @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Tạo danh mục việc làm mới (Admin)' })
+  create(@Body() dto: CreateCategoryDto) {
+    return this.service.create(dto);
   }
 
   @Get()
-  findAll(@Query() q: PaginationDto) {
-    return this.service.findAll(q.page, q.limit);
+  @ApiOperation({ summary: 'Danh sách danh mục việc làm (Công khai)' })
+  findAll(@Query() q: QueryCategoryDto) {
+    return this.service.findAll(q);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  @ApiOperation({ summary: 'Chi tiết danh mục việc làm (Công khai)' })
+  findOne(@Param('id', ParseObjectIdPipe) id: string) {
     return this.service.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.service.update(id, body);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cập nhật danh mục việc làm (Admin)' })
+  update(@Param('id', ParseObjectIdPipe) id: string, @Body() dto: UpdateCategoryDto) {
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xóa danh mục việc làm (Admin)' })
+  remove(@Param('id', ParseObjectIdPipe) id: string) {
     return this.service.remove(id);
   }
 }

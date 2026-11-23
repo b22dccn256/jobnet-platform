@@ -1,35 +1,79 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums/role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { AuthUserPayload } from '../../common/interfaces/auth-user.interface';
+import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe';
 import { AdminService } from './admin.service';
+import {
+  AdminJobsQueryDto,
+  AdminUsersQueryDto,
+  ModerateJobDto,
+  UpdateUserRoleDto,
+  UpdateUserStatusDto,
+} from './dto/admin.dto';
 
 // Phụ trách: Tuấn
 @ApiTags('admin')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Admin)
 @Controller('admin')
 export class AdminController {
   constructor(private readonly service: AdminService) {}
 
-
   @Get('users')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  users(@Query('page') page = 1, @Query('limit') limit = 10) {
-    // TODO: RolesGuard(admin)
-    return this.service.listUsers(Number(page), Number(limit));
+  @ApiOperation({ summary: 'Danh sách tài khoản người dùng (Admin)' })
+  users(@Query() q: AdminUsersQueryDto) {
+    return this.service.listUsers(q);
   }
 
-  @Post('jobs/:id/moderate')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  moderate(@Param('id') id: string, @Body() body: { approve: boolean; reason?: string }) {
-    return this.service.moderateJob(id, body.approve, body.reason);
+  @Patch('users/:id/status')
+  @ApiOperation({ summary: 'Khóa hoặc mở khóa tài khoản người dùng (Admin)' })
+  updateUserStatus(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() actor: AuthUserPayload,
+    @Body() dto: UpdateUserStatusDto,
+  ) {
+    return this.service.updateUserStatus(id, actor.userId, dto);
+  }
+
+  @Patch('users/:id/role')
+  @ApiOperation({ summary: 'Cập nhật phân quyền tài khoản (Admin)' })
+  updateUserRole(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() actor: AuthUserPayload,
+    @Body() dto: UpdateUserRoleDto,
+  ) {
+    return this.service.updateUserRole(id, actor.userId, dto);
+  }
+
+  @Get('jobs')
+  @ApiOperation({ summary: 'Danh sách tin tuyển dụng phục vụ kiểm duyệt (Admin)' })
+  jobs(@Query() q: AdminJobsQueryDto) {
+    return this.service.listJobs(q);
+  }
+
+  @Patch('jobs/:id/moderate')
+  @ApiOperation({ summary: 'Duyệt hoặc từ chối tin tuyển dụng (Admin)' })
+  moderate(@Param('id', ParseObjectIdPipe) id: string, @Body() dto: ModerateJobDto) {
+    return this.service.moderateJob(id, dto);
   }
 
   @Get('reports')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Báo cáo thống kê hệ thống và doanh thu VNPay (Admin)' })
   report() {
     return this.service.report();
   }
-
 }

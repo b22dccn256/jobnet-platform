@@ -1,39 +1,99 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums/role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { AuthUserPayload } from '../../common/interfaces/auth-user.interface';
+import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe';
+import {
+  CreateJobDto,
+  EmployerQueryJobDto,
+  QueryJobDto,
+  UpdateJobDto,
+} from './dto/job.dto';
 import { JobService } from './jobs.service';
 
-// TODO (Tuấn): gắn RolesGuard + @Roles(...) và DTO validate cho từng endpoint
+// Phụ trách: Tuấn
 @ApiTags('jobs')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('jobs')
 export class JobController {
   constructor(private readonly service: JobService) {}
 
   @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employer)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Đăng tin tuyển dụng mới (Nhà tuyển dụng - chờ Admin duyệt)' })
+  create(@CurrentUser() user: AuthUserPayload, @Body() dto: CreateJobDto) {
+    return this.service.createForEmployer(user.userId, dto);
   }
 
   @Get()
-  findAll(@Query() q: PaginationDto) {
-    return this.service.findAll(q.page, q.limit);
+  @ApiOperation({ summary: 'Danh sách tin tuyển dụng đã duyệt (Công khai)' })
+  findAll(@Query() q: QueryJobDto) {
+    return this.service.findPublic(q);
+  }
+
+  @Get('my')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employer)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Danh sách tin tuyển dụng của công ty hiện tại' })
+  findMine(@CurrentUser() user: AuthUserPayload, @Query() q: EmployerQueryJobDto) {
+    return this.service.findByEmployer(user.userId, q);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({ summary: 'Chi tiết tin tuyển dụng' })
+  findOne(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload | null,
+  ) {
+    return this.service.findOneAuthorized(id, user);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.service.update(id, body);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employer, Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cập nhật tin tuyển dụng (Chủ tin hoặc Admin)' })
+  update(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload,
+    @Body() dto: UpdateJobDto,
+  ) {
+    return this.service.updateForEmployer(id, user, dto);
+  }
+
+  @Patch(':id/close')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employer, Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Đóng tin tuyển dụng (Chủ tin hoặc Admin)' })
+  close(@Param('id', ParseObjectIdPipe) id: string, @CurrentUser() user: AuthUserPayload) {
+    return this.service.closeForEmployer(id, user);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Employer, Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xóa tin tuyển dụng (Chủ tin hoặc Admin)' })
+  remove(@Param('id', ParseObjectIdPipe) id: string, @CurrentUser() user: AuthUserPayload) {
+    return this.service.removeForEmployer(id, user);
   }
 }

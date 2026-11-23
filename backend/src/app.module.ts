@@ -29,6 +29,7 @@ import { RecommendationModule } from './modules/recommendation/recommendation.mo
 import { MailModule } from './modules/mail/mail.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { HealthController } from './common/health/health.controller';
 
 @Module({
   imports: [
@@ -66,5 +67,6 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     AdminModule,
     NotificationsModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

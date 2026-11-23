@@ -7,8 +7,9 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
+    "seed": "ts-node src/seed.ts",
     "lint": "eslint \"{src,test}/**/*.ts\"",
-    "test": "jest"
+    "test": "rimraf dist-test && tsc -p tsconfig.test.json && node --test dist-test/test/*.spec.js && rimraf dist-test"
   },
   "dependencies": {
     "@elastic/elasticsearch": "^8.13.1",
