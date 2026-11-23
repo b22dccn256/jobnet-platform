@@ -1,39 +1,72 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { Role } from '../../../common/enums/role.enum';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { AuthUserPayload } from '../../../common/interfaces/auth-user.interface';
+import { ParseObjectIdPipe } from '../../../common/pipes/parse-object-id.pipe';
 import { CourseService } from './courses.service';
+import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
 
-// TODO (Hà): gắn RolesGuard + @Roles(...) và DTO validate cho từng endpoint
+// Phụ trách: Hà
 @ApiTags('courses')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Candidate)
 @Controller('courses')
 export class CourseController {
   constructor(private readonly service: CourseService) {}
 
   @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  @ApiOperation({ summary: 'Thêm khóa học / chứng chỉ của ứng viên' })
+  create(@CurrentUser() user: AuthUserPayload, @Body() dto: CreateCourseDto) {
+    return this.service.createForUser(user.userId, { ...dto });
   }
 
   @Get()
-  findAll(@Query() q: PaginationDto) {
-    return this.service.findAll(q.page, q.limit);
+  @ApiOperation({ summary: 'Danh sách khóa học của ứng viên hiện tại' })
+  findAll(@CurrentUser() user: AuthUserPayload, @Query() q: PaginationDto) {
+    return this.service.findAllByUser(user.userId, q.page, q.limit);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  @ApiOperation({ summary: 'Chi tiết một khóa học của ứng viên' })
+  findOne(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload,
+  ) {
+    return this.service.findOneForUser(id, user.userId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.service.update(id, body);
+  @ApiOperation({ summary: 'Cập nhật khóa học của ứng viên' })
+  update(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload,
+    @Body() dto: UpdateCourseDto,
+  ) {
+    return this.service.updateForUser(id, user.userId, { ...dto });
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  @ApiOperation({ summary: 'Xóa khóa học của ứng viên' })
+  remove(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload,
+  ) {
+    return this.service.removeForUser(id, user.userId);
   }
 }

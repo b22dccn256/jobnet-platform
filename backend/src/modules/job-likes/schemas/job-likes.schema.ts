@@ -13,3 +13,6 @@ export class JobLike {
 }
 
 export const JobLikeSchema = SchemaFactory.createForClass(JobLike);
+
+JobLikeSchema.index({ user: 1, job: 1 }, { unique: true });
+JobLikeSchema.index({ user: 1, createdAt: -1 });

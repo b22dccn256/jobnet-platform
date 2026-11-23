@@ -69,7 +69,12 @@ export class UserService {
   async update(id: string, data: Partial<User>) {
     const cleanData = Object.fromEntries(
       Object.entries(data).filter(([, value]) => value !== undefined),
-    );
+    ) as Partial<User>;
+    if (Array.isArray(cleanData.skills)) {
+      cleanData.skills = Array.from(
+        new Set(cleanData.skills.map((s) => s.trim()).filter(Boolean)),
+      );
+    }
     const doc = await this.model.findByIdAndUpdate(id, cleanData, { new: true }).exec();
     if (!doc) throw new NotFoundException('User not found');
     return doc;

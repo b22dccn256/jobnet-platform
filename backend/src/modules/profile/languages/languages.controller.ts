@@ -1,39 +1,72 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { Role } from '../../../common/enums/role.enum';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { AuthUserPayload } from '../../../common/interfaces/auth-user.interface';
+import { ParseObjectIdPipe } from '../../../common/pipes/parse-object-id.pipe';
+import { CreateLanguageDto, UpdateLanguageDto } from './dto/language.dto';
 import { LanguageService } from './languages.service';
 
-// TODO (Hà): gắn RolesGuard + @Roles(...) và DTO validate cho từng endpoint
+// Phụ trách: Hà
 @ApiTags('languages')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Candidate)
 @Controller('languages')
 export class LanguageController {
   constructor(private readonly service: LanguageService) {}
 
   @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  @ApiOperation({ summary: 'Thêm ngoại ngữ của ứng viên' })
+  create(@CurrentUser() user: AuthUserPayload, @Body() dto: CreateLanguageDto) {
+    return this.service.createForUser(user.userId, { ...dto });
   }
 
   @Get()
-  findAll(@Query() q: PaginationDto) {
-    return this.service.findAll(q.page, q.limit);
+  @ApiOperation({ summary: 'Danh sách ngoại ngữ của ứng viên hiện tại' })
+  findAll(@CurrentUser() user: AuthUserPayload, @Query() q: PaginationDto) {
+    return this.service.findAllByUser(user.userId, q.page, q.limit);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  @ApiOperation({ summary: 'Chi tiết một mục ngoại ngữ' })
+  findOne(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload,
+  ) {
+    return this.service.findOneForUser(id, user.userId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.service.update(id, body);
+  @ApiOperation({ summary: 'Cập nhật ngoại ngữ của ứng viên' })
+  update(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload,
+    @Body() dto: UpdateLanguageDto,
+  ) {
+    return this.service.updateForUser(id, user.userId, { ...dto });
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  @ApiOperation({ summary: 'Xóa ngoại ngữ của ứng viên' })
+  remove(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload,
+  ) {
+    return this.service.removeForUser(id, user.userId);
   }
 }

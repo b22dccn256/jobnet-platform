@@ -1,39 +1,72 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { Role } from '../../../common/enums/role.enum';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../common/guards/roles.guard';
+import { AuthUserPayload } from '../../../common/interfaces/auth-user.interface';
+import { ParseObjectIdPipe } from '../../../common/pipes/parse-object-id.pipe';
+import { UpsertHealthDto } from './dto/health.dto';
 import { HealthService } from './health.service';
 
-// TODO (Hà): gắn RolesGuard + @Roles(...) và DTO validate cho từng endpoint
+// Phụ trách: Hà
 @ApiTags('health')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Candidate)
 @Controller('health')
 export class HealthController {
   constructor(private readonly service: HealthService) {}
 
   @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  @ApiOperation({ summary: 'Thêm thông tin sức khỏe của ứng viên' })
+  create(@CurrentUser() user: AuthUserPayload, @Body() dto: UpsertHealthDto) {
+    return this.service.createForUser(user.userId, { ...dto });
   }
 
   @Get()
-  findAll(@Query() q: PaginationDto) {
-    return this.service.findAll(q.page, q.limit);
+  @ApiOperation({ summary: 'Danh sách thông tin sức khỏe của ứng viên hiện tại' })
+  findAll(@CurrentUser() user: AuthUserPayload, @Query() q: PaginationDto) {
+    return this.service.findAllByUser(user.userId, q.page, q.limit);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  @ApiOperation({ summary: 'Chi tiết thông tin sức khỏe' })
+  findOne(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload,
+  ) {
+    return this.service.findOneForUser(id, user.userId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.service.update(id, body);
+  @ApiOperation({ summary: 'Cập nhật thông tin sức khỏe' })
+  update(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload,
+    @Body() dto: UpsertHealthDto,
+  ) {
+    return this.service.updateForUser(id, user.userId, { ...dto });
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  @ApiOperation({ summary: 'Xóa thông tin sức khỏe' })
+  remove(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser() user: AuthUserPayload,
+  ) {
+    return this.service.removeForUser(id, user.userId);
   }
 }

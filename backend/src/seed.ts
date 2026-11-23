@@ -11,6 +11,12 @@ import {
   PremiumPackage,
   PremiumPackageSchema,
 } from './modules/premium-packages/schemas/premium-packages.schema';
+import { Education, EducationSchema } from './modules/profile/educations/schemas/educations.schema';
+import { Project, ProjectSchema } from './modules/profile/projects/schemas/projects.schema';
+import {
+  WorkExperience,
+  WorkExperienceSchema,
+} from './modules/profile/work-experiences/schemas/work-experiences.schema';
 import { User, UserSchema } from './modules/users/schemas/users.schema';
 
 function loadEnvFile() {
@@ -44,6 +50,9 @@ async function seed() {
   const CompanyModel = mongoose.model(Company.name, CompanySchema);
   const JobModel = mongoose.model(Job.name, JobSchema);
   const PackageModel = mongoose.model(PremiumPackage.name, PremiumPackageSchema);
+  const EducationModel = mongoose.model(Education.name, EducationSchema);
+  const WorkExperienceModel = mongoose.model(WorkExperience.name, WorkExperienceSchema);
+  const ProjectModel = mongoose.model(Project.name, ProjectSchema);
 
   const defaultPasswordHash = await bcrypt.hash('123456', 10);
 
@@ -87,6 +96,13 @@ async function seed() {
         role: Role.Candidate,
         fullName: 'Nguyễn Duy Hà (Ứng viên)',
         phone: '0912345678',
+        bio: 'Sinh viên năm cuối CNTT đam mê xây dựng hệ thống Web, Backend NestJS và ứng dụng AI.',
+        skills: ['TypeScript', 'NestJS', 'React', 'Next.js', 'MongoDB', 'Python'],
+        desiredTitle: 'Backend / Fullstack Developer',
+        desiredLevel: 'junior',
+        desiredSalaryMin: 15000000,
+        desiredLocation: 'Hà Nội',
+        cvTemplate: 'modern',
         isActive: true,
         isVerified: true,
       },
@@ -239,6 +255,49 @@ async function seed() {
       { upsert: true, new: true },
     );
   }
+
+  await EducationModel.findOneAndUpdate(
+    { user: candidateUser._id, school: 'Học viện Công nghệ Bưu chính Viễn thông' },
+    {
+      $setOnInsert: {
+        user: candidateUser._id,
+        school: 'Học viện Công nghệ Bưu chính Viễn thông',
+        major: 'Công nghệ thông tin',
+        degree: 'Kỹ sư',
+        startDate: new Date('2022-09-01'),
+        endDate: new Date('2026-06-30'),
+      },
+    },
+    { upsert: true, new: true },
+  );
+
+  await WorkExperienceModel.findOneAndUpdate(
+    { user: candidateUser._id, position: 'Backend Developer Intern' },
+    {
+      $setOnInsert: {
+        user: candidateUser._id,
+        position: 'Backend Developer Intern',
+        company: 'Công ty Công nghệ PTIT Tech',
+        startDate: new Date('2025-06-01'),
+        endDate: new Date('2025-09-30'),
+        description: 'Phát triển REST API bằng NestJS, TypeScript và MongoDB.',
+      },
+    },
+    { upsert: true, new: true },
+  );
+
+  await ProjectModel.findOneAndUpdate(
+    { user: candidateUser._id, name: 'JobNet – Hệ thống hỗ trợ tìm kiếm việc làm' },
+    {
+      $setOnInsert: {
+        user: candidateUser._id,
+        name: 'JobNet – Hệ thống hỗ trợ tìm kiếm việc làm',
+        description: 'Nền tảng tuyển dụng SME tích hợp Elasticsearch, Chatbot Groq và Scrapy.',
+        technologies: ['NestJS', 'Next.js', 'MongoDB', 'Elasticsearch', 'Flask'],
+      },
+    },
+    { upsert: true, new: true },
+  );
 
   console.log('Seed completed:', {
     admin: adminUser.email,

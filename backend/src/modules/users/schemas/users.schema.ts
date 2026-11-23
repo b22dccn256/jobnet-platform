@@ -35,6 +35,37 @@ export class User {
 
   @Prop({ select: false })
   resetPasswordExpires?: Date;
+
+  // Hồ sơ nghề nghiệp & cài đặt CV cho ứng viên (theo SCHEMA.md ghi chú #3)
+  @Prop({ trim: true })
+  bio?: string;
+
+  @Prop({ type: [String], default: [] })
+  skills?: string[];
+
+  @Prop({ trim: true })
+  desiredTitle?: string;
+
+  @Prop({ enum: ['intern', 'junior', 'middle', 'senior'] })
+  desiredLevel?: string;
+
+  @Prop()
+  desiredSalaryMin?: number;
+
+  @Prop({ trim: true })
+  desiredLocation?: string;
+
+  @Prop()
+  cvUrl?: string;
+
+  @Prop({ enum: ['modern', 'classic', 'minimal'], default: 'modern' })
+  cvTemplate?: string;
+
+  @Prop({ default: false })
+  isCvPublic?: boolean;
+
+  @Prop({ unique: true, sparse: true })
+  cvShareToken?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

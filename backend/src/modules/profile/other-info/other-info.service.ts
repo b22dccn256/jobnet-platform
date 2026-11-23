@@ -1,39 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { BaseUserOwnedService } from '../../../common/services/base-user-owned.service';
 import { OtherInfo, OtherInfoDocument } from './schemas/other-info.schema';
 
 @Injectable()
-export class OtherInfoService {
-  constructor(@InjectModel(OtherInfo.name) private readonly model: Model<OtherInfoDocument>) {}
-
-  create(data: Partial<OtherInfo>) {
-    return this.model.create(data);
-  }
-
-  async findAll(page = 1, limit = 10) {
-    const [items, total] = await Promise.all([
-      this.model.find().skip((page - 1) * limit).limit(limit).exec(),
-      this.model.countDocuments(),
-    ]);
-    return { items, total, page, limit };
-  }
-
-  async findOne(id: string) {
-    const doc = await this.model.findById(id).exec();
-    if (!doc) throw new NotFoundException('OtherInfo not found');
-    return doc;
-  }
-
-  async update(id: string, data: Partial<OtherInfo>) {
-    const doc = await this.model.findByIdAndUpdate(id, data, { new: true }).exec();
-    if (!doc) throw new NotFoundException('OtherInfo not found');
-    return doc;
-  }
-
-  async remove(id: string) {
-    const doc = await this.model.findByIdAndDelete(id).exec();
-    if (!doc) throw new NotFoundException('OtherInfo not found');
-    return { deleted: true };
+export class OtherInfoService extends BaseUserOwnedService<OtherInfoDocument> {
+  constructor(@InjectModel(OtherInfo.name) model: Model<OtherInfoDocument>) {
+    super(model, 'thông tin khác');
   }
 }

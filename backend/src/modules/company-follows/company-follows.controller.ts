@@ -1,39 +1,77 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { Role } from '../../common/enums/role.enum';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { AuthUserPayload } from '../../common/interfaces/auth-user.interface';
+import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe';
 import { CompanyFollowService } from './company-follows.service';
 
-// TODO (Hà): gắn RolesGuard + @Roles(...) và DTO validate cho từng endpoint
+// Phụ trách: Hà
 @ApiTags('company-follows')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('company-follows')
 export class CompanyFollowController {
   constructor(private readonly service: CompanyFollowService) {}
 
-  @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  @Get('me')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Candidate)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Danh sách công ty ứng viên đang theo dõi' })
+  findMine(@CurrentUser() user: AuthUserPayload, @Query() q: PaginationDto) {
+    return this.service.findMine(user.userId, q.page, q.limit);
   }
 
-  @Get()
-  findAll(@Query() q: PaginationDto) {
-    return this.service.findAll(q.page, q.limit);
+  @Get('check/:companyId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Candidate)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Kiểm tra ứng viên đã theo dõi công ty này chưa' })
+  check(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('companyId', ParseObjectIdPipe) companyId: string,
+  ) {
+    return this.service.isFollowing(user.userId, companyId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  @Get('company/:companyId/count')
+  @ApiOperation({ summary: 'Số lượng người theo dõi một công ty (Công khai)' })
+  count(@Param('companyId', ParseObjectIdPipe) companyId: string) {
+    return this.service.countFollowers(companyId);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.service.update(id, body);
+  @Post(':companyId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Candidate)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Theo dõi công ty (Ứng viên)' })
+  follow(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('companyId', ParseObjectIdPipe) companyId: string,
+  ) {
+    return this.service.follow(user.userId, companyId);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  @Delete(':companyId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Candidate)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Hủy theo dõi công ty (Ứng viên)' })
+  unfollow(
+    @CurrentUser() user: AuthUserPayload,
+    @Param('companyId', ParseObjectIdPipe) companyId: string,
+  ) {
+    return this.service.unfollow(user.userId, companyId);
   }
 }

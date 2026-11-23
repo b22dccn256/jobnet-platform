@@ -4,7 +4,7 @@ Tên collection theo danh mục trong đề cương. Mọi collection có `creat
 
 | Collection | Mô tả | Trường chính | Tham chiếu |
 |---|---|---|---|
-| `users` | Tài khoản | email, password(hash), role(`candidate`\|`employer`\|`admin`), fullName, phone, avatar, isActive, isVerified, resetPasswordToken, resetPasswordExpires | – |
+| `users` | Tài khoản | email, password(hash), role(`candidate`\|`employer`\|`admin`), fullName, phone, avatar, isActive, isVerified, resetPasswordToken, resetPasswordExpires, bio, skills[], desiredTitle, desiredLevel, desiredSalaryMin, desiredLocation, cvUrl, cvTemplate(`modern`\|`classic`\|`minimal`), isCvPublic, cvShareToken | – |
 | `companies` | Nhà tuyển dụng | name, logo, description, address, website, size, industry | user |
 | `categories` | Danh mục việc làm | name, slug, description | – |
 | `jobs` | Tin tuyển dụng | title, description, benefits, requirements, skills[], location, workMode, level, education, salaryMin, salaryMax, deadline, **status**(`pending`\|`approved`\|`rejected`\|`closed`), rejectReason | company, category |

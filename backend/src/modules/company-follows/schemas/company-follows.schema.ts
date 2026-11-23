@@ -13,3 +13,6 @@ export class CompanyFollow {
 }
 
 export const CompanyFollowSchema = SchemaFactory.createForClass(CompanyFollow);
+
+CompanyFollowSchema.index({ user: 1, company: 1 }, { unique: true });
+CompanyFollowSchema.index({ company: 1 });

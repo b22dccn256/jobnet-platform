@@ -19,6 +19,7 @@ import { LanguageModule } from './modules/profile/languages/languages.module';
 import { OtherInfoModule } from './modules/profile/other-info/other-info.module';
 import { ProjectModule } from './modules/profile/projects/projects.module';
 import { WorkExperienceModule } from './modules/profile/work-experiences/work-experiences.module';
+import { CvModule } from './modules/profile/cv/cv.module';
 import { UserModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { SearchModule } from './modules/search/search.module';
@@ -56,6 +57,7 @@ import { HealthController } from './common/health/health.controller';
     OtherInfoModule,
     ProjectModule,
     WorkExperienceModule,
+    CvModule,
     UserModule,
     AuthModule,
     SearchModule,

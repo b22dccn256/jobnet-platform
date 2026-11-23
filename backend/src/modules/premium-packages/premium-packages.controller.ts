@@ -1,39 +1,69 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { Role } from '../../common/enums/role.enum';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe';
+import { CreatePremiumPackageDto, UpdatePremiumPackageDto } from './dto/premium-package.dto';
 import { PremiumPackageService } from './premium-packages.service';
 
-// TODO (Tuấn): gắn RolesGuard + @Roles(...) và DTO validate cho từng endpoint
+// Phụ trách: Tuấn
 @ApiTags('premium-packages')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('premium-packages')
 export class PremiumPackageController {
   constructor(private readonly service: PremiumPackageService) {}
 
   @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Tạo gói dịch vụ mới (Admin)' })
+  create(@Body() dto: CreatePremiumPackageDto) {
+    return this.service.create(dto);
   }
 
   @Get()
+  @ApiOperation({ summary: 'Danh sách các gói dịch vụ đăng tin (Công khai)' })
   findAll(@Query() q: PaginationDto) {
     return this.service.findAll(q.page, q.limit);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  @ApiOperation({ summary: 'Chi tiết gói dịch vụ (Công khai)' })
+  findOne(@Param('id', ParseObjectIdPipe) id: string) {
     return this.service.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.service.update(id, body);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cập nhật gói dịch vụ (Admin)' })
+  update(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: UpdatePremiumPackageDto,
+  ) {
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xóa gói dịch vụ (Admin)' })
+  remove(@Param('id', ParseObjectIdPipe) id: string) {
     return this.service.remove(id);
   }
 }
