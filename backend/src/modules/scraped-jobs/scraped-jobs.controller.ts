@@ -1,39 +1,66 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums/role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe';
+import {
+  CreateScrapedJobDto,
+  QueryScrapedJobDto,
+  UpdateScrapedJobDto,
+} from './dto/scraped-job.dto';
 import { ScrapedJobService } from './scraped-jobs.service';
 
-// TODO (Hà): gắn RolesGuard + @Roles(...) và DTO validate cho từng endpoint
+// Phụ trách: Hà
 @ApiTags('scraped-jobs')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.Admin)
 @Controller('scraped-jobs')
 export class ScrapedJobController {
   constructor(private readonly service: ScrapedJobService) {}
 
   @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  @ApiOperation({ summary: 'Thêm bản ghi việc làm thu thập được (Admin)' })
+  create(@Body() dto: CreateScrapedJobDto) {
+    return this.service.create(dto);
   }
 
   @Get()
-  findAll(@Query() q: PaginationDto) {
-    return this.service.findAll(q.page, q.limit);
+  @ApiOperation({ summary: 'Danh sách dữ liệu việc làm đã cào (Admin)' })
+  findAll(@Query() q: QueryScrapedJobDto) {
+    return this.service.findAll(q);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  @ApiOperation({ summary: 'Chi tiết một bản ghi việc làm đã cào (Admin)' })
+  findOne(@Param('id', ParseObjectIdPipe) id: string) {
     return this.service.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.service.update(id, body);
+  @ApiOperation({ summary: 'Cập nhật bản ghi việc làm đã cào (Admin)' })
+  update(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: UpdateScrapedJobDto,
+  ) {
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  @ApiOperation({ summary: 'Xóa bản ghi việc làm đã cào (Admin)' })
+  remove(@Param('id', ParseObjectIdPipe) id: string) {
     return this.service.remove(id);
   }
 }

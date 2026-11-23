@@ -1,39 +1,87 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { Role } from '../../common/enums/role.enum';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { ParseObjectIdPipe } from '../../common/pipes/parse-object-id.pipe';
+import {
+  CreateMarketInsightDto,
+  QueryMarketInsightDto,
+  UpdateMarketInsightDto,
+} from './dto/market-insight.dto';
 import { MarketInsightService } from './market-insights.service';
 
-// TODO (Hà): gắn RolesGuard + @Roles(...) và DTO validate cho từng endpoint
+// Phụ trách: Hà
 @ApiTags('market-insights')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('market-insights')
 export class MarketInsightController {
   constructor(private readonly service: MarketInsightService) {}
 
-  @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  @Get()
+  @ApiOperation({ summary: 'Danh sách thống kê thị trường việc làm (Công khai)' })
+  findAll(@Query() q: QueryMarketInsightDto) {
+    return this.service.findAll(q);
   }
 
-  @Get()
-  findAll(@Query() q: PaginationDto) {
-    return this.service.findAll(q.page, q.limit);
+  @Get('overview')
+  @ApiOperation({ summary: 'Tổng quan 3 biểu đồ thị trường: lương, kỹ năng hot, xu hướng (Công khai)' })
+  overview() {
+    return this.service.getOverview();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  @ApiOperation({ summary: 'Chi tiết một bản ghi thống kê thị trường (Công khai)' })
+  findOne(@Param('id', ParseObjectIdPipe) id: string) {
     return this.service.findOne(id);
   }
 
+  @Post('recalculate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Tổng hợp lại chỉ số thị trường từ dữ liệu việc làm (Admin)' })
+  recalculate() {
+    return this.service.recalculate();
+  }
+
+  @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Tạo bản ghi thống kê thị trường (Admin)' })
+  create(@Body() dto: CreateMarketInsightDto) {
+    return this.service.create(dto);
+  }
+
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.service.update(id, body);
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cập nhật thống kê thị trường (Admin)' })
+  update(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: UpdateMarketInsightDto,
+  ) {
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xóa bản ghi thống kê thị trường (Admin)' })
+  remove(@Param('id', ParseObjectIdPipe) id: string) {
     return this.service.remove(id);
   }
 }
