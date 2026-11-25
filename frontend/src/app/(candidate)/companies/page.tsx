@@ -1,19 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, Empty, Input, Pagination, Skeleton, Tag } from 'antd';
 import { BankOutlined, EnvironmentOutlined, SearchOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
+import SmartAvatar from '@/components/common/SmartAvatar';
 import { employerService } from '@/services/employer.service';
 
 export default function CompaniesPage() {
   const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [page, setPage] = useState(1);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQ(q);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [q]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ['companies', q, page],
-    queryFn: () => employerService.getCompanies({ q, page, limit: 12 }),
+    queryKey: ['companies', debouncedQ, page],
+    queryFn: () => employerService.getCompanies({ q: debouncedQ, page, limit: 12 }),
   });
 
   return (
@@ -57,14 +67,31 @@ export default function CompaniesPage() {
             {data.items.map((comp) => (
               <Link key={comp._id} href={`/companies/${comp._id}`} className="category-card">
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 10 }}>
-                  <div className="job-card__logo" style={{ width: 44, height: 44, fontSize: 18 }}>
-                    {comp.logo ? <img src={comp.logo} alt={comp.name} /> : <BankOutlined />}
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <h3 className="category-card__name" style={{ margin: 0 }}>
+                  <SmartAvatar
+                    src={comp.logo}
+                    name={comp.name}
+                    fallbackIcon={<BankOutlined />}
+                    className="job-card__logo"
+                    style={{ width: 44, height: 44, fontSize: 18 }}
+                  />
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <h3 className="category-card__name" style={{ margin: '0 0 4px' }}>
                       {comp.name}
                     </h3>
-                    {comp.industry && <Tag color="blue">{comp.industry}</Tag>}
+                    {comp.industry && (
+                      <Tag
+                        color="blue"
+                        style={{
+                          maxWidth: '100%',
+                          whiteSpace: 'normal',
+                          height: 'auto',
+                          lineHeight: 1.35,
+                          marginInlineEnd: 0,
+                        }}
+                      >
+                        {comp.industry}
+                      </Tag>
+                    )}
                   </div>
                 </div>
                 <p className="category-card__desc">{comp.description || 'Chưa cập nhật mô tả'}</p>

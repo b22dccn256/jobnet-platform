@@ -1,7 +1,13 @@
 'use client';
 
-import { Button, Card, Statistic, Tag, message } from 'antd';
-import { SyncOutlined } from '@ant-design/icons';
+import { Button, Card, Skeleton, Statistic, Tag, message } from 'antd';
+import {
+  BankOutlined,
+  DollarCircleOutlined,
+  FileDoneOutlined,
+  SyncOutlined,
+  TeamOutlined,
+} from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import AdminNav from '@/components/admin/AdminNav';
 import { getErrorMessage } from '@/lib/error';
@@ -38,41 +44,61 @@ export default function AdminReportsPage() {
       </div>
 
       {isLoading || !data ? (
-        <Card>Đang tải số liệu báo cáo...</Card>
+        <Card style={{ borderRadius: 14 }}>
+          <Skeleton active paragraph={{ rows: 5 }} />
+        </Card>
       ) : (
         <>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-              gap: 16,
-              marginBottom: 24,
-            }}
-          >
-            <Card>
-              <Statistic
-                title="Tổng doanh thu qua VNPay"
-                value={data.revenue}
-                suffix="đ"
-                valueStyle={{ color: '#10b981' }}
-              />
-              <Tag color="green" style={{ marginTop: 8 }}>
-                {data.premiumOrders} giao dịch thành công
-              </Tag>
-            </Card>
-            <Card>
-              <Statistic title="Tổng tài khoản người dùng" value={data.users.total} />
-              <p style={{ margin: '8px 0 0', fontSize: 12, color: '#64748b' }}>
-                Ứng viên: {data.users.candidates} · NTD: {data.users.employers} · Admin:{' '}
-                {data.users.admins}
-              </p>
-            </Card>
-            <Card>
-              <Statistic title="Tổng doanh nghiệp đăng ký" value={data.companies} />
-            </Card>
-            <Card>
-              <Statistic title="Tổng đơn ứng tuyển" value={data.applications} />
-            </Card>
+          <div className="sugg-kpi-grid">
+            <div className="sugg-kpi-card">
+              <span className="sugg-kpi-card__icon" style={{ background: '#059669' }}>
+                <DollarCircleOutlined />
+              </span>
+              <div>
+                <div className="sugg-kpi-card__label">Tổng doanh thu VNPay</div>
+                <strong className="sugg-kpi-card__value">
+                  {data.revenue.toLocaleString('vi-VN')} đ
+                </strong>
+                <div>
+                  <Tag color="success" style={{ marginTop: 4 }}>
+                    {data.premiumOrders} giao dịch thành công
+                  </Tag>
+                </div>
+              </div>
+            </div>
+
+            <div className="sugg-kpi-card">
+              <span className="sugg-kpi-card__icon">
+                <TeamOutlined />
+              </span>
+              <div>
+                <div className="sugg-kpi-card__label">Tài khoản người dùng</div>
+                <strong className="sugg-kpi-card__value">{data.users.total}</strong>
+                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                  ỨV: {data.users.candidates} · NTD: {data.users.employers} · Admin: {data.users.admins}
+                </div>
+              </div>
+            </div>
+
+            <div className="sugg-kpi-card">
+              <span className="sugg-kpi-card__icon" style={{ background: '#0284c7' }}>
+                <BankOutlined />
+              </span>
+              <div>
+                <div className="sugg-kpi-card__label">Doanh nghiệp đăng ký</div>
+                <strong className="sugg-kpi-card__value">{data.companies}</strong>
+              </div>
+            </div>
+
+            <div className="sugg-kpi-card">
+              <span className="sugg-kpi-card__icon" style={{ background: '#7c3aed' }}>
+                <FileDoneOutlined />
+              </span>
+              <div>
+                <div className="sugg-kpi-card__label">Tổng đơn ứng tuyển</div>
+                <strong className="sugg-kpi-card__value">{data.applications}</strong>
+              </div>
+            </div>
           </div>
 
           <Card title="Tình trạng tin tuyển dụng trên hệ thống" style={{ borderRadius: 14 }}>
@@ -92,12 +118,12 @@ export default function AdminReportsPage() {
               <Statistic
                 title="Đang hiển thị"
                 value={data.jobs.approved}
-                valueStyle={{ color: '#10b981' }}
+                valueStyle={{ color: '#059669' }}
               />
               <Statistic
                 title="Đã từ chối"
                 value={data.jobs.rejected}
-                valueStyle={{ color: '#ef4444' }}
+                valueStyle={{ color: '#dc2626' }}
               />
               <Statistic title="Đã đóng" value={data.jobs.closed} />
             </div>

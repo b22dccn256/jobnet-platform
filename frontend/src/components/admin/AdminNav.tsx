@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Space, Tag } from 'antd';
+import { usePathname, useRouter } from 'next/navigation';
+import { Tag } from 'antd';
 import {
   AuditOutlined,
   BarChartOutlined,
@@ -19,35 +19,27 @@ const ITEMS = [
 
 export default function AdminNav() {
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 12,
-        padding: '12px 16px',
-        marginBottom: 24,
-        borderRadius: 12,
-        background: '#ffffff',
-        border: '1px solid #e2e8f0',
-      }}
-    >
-      <Space wrap size={6}>
+    <div className="emp-subnav">
+      <div className="emp-subnav__links">
         {ITEMS.map((item) => (
           <Link
             key={item.href}
             href={item.href}
+            prefetch={true}
+            onMouseEnter={() => router.prefetch(item.href)}
             className={`site-nav__link${pathname === item.href ? ' is-active' : ''}`}
           >
             {item.icon}
             <span>{item.label}</span>
           </Link>
         ))}
-      </Space>
-      <Tag color="red">Quản trị hệ thống</Tag>
+      </div>
+      <Tag color="volcano" style={{ margin: 0 }}>
+        Quản trị hệ thống
+      </Tag>
     </div>
   );
 }

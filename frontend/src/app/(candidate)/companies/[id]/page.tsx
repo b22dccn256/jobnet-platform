@@ -6,6 +6,7 @@ import { EnvironmentOutlined, GlobalOutlined, PlusOutlined, CheckOutlined } from
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import JobCardItem from '@/components/common/JobCardItem';
+import SmartAvatar from '@/components/common/SmartAvatar';
 import { getErrorMessage } from '@/lib/error';
 import { applicationsService } from '@/services/applications.service';
 import { employerService } from '@/services/employer.service';
@@ -73,9 +74,12 @@ export default function CompanyDetailPage({ params }: { params: { id: string } }
           }}
         >
           <Space size="middle" align="start">
-            <div className="job-card__logo" style={{ width: 64, height: 64, fontSize: 24 }}>
-              {company.logo ? <img src={company.logo} alt={company.name} /> : company.name[0]}
-            </div>
+            <SmartAvatar
+              src={company.logo}
+              name={company.name}
+              className="job-card__logo"
+              style={{ width: 64, height: 64, fontSize: 24 }}
+            />
             <div>
               <h1 style={{ margin: '0 0 6px', fontSize: 22 }}>{company.name}</h1>
               <Space wrap>

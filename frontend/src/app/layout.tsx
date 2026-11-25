@@ -3,6 +3,8 @@ import { AntdRegistry } from '@ant-design/nextjs-registry';
 import Providers from '@/providers/Providers';
 import AppHeader from '@/components/common/Header';
 import AppFooter from '@/components/common/Footer';
+import RouteProgressBar from '@/components/common/RouteProgressBar';
+import FloatingChatWidget from '@/components/common/FloatingChatWidget';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -22,9 +24,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AntdRegistry>
           <Providers>
+            <RouteProgressBar />
             <AppHeader />
             <main className="site-main">{children}</main>
             <AppFooter />
+            <FloatingChatWidget />
           </Providers>
         </AntdRegistry>
       </body>

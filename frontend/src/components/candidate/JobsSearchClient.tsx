@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AutoComplete, Button, Card, Empty, Pagination, Select, Skeleton, Tag } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
@@ -22,6 +22,7 @@ interface Props {
 
 export default function JobsSearchClient({ initialJobs, categories, initialFilters }: Props) {
   const [q, setQ] = useState(initialFilters.q || '');
+  const [debouncedQ, setDebouncedQ] = useState(initialFilters.q || '');
   const [category, setCategory] = useState<string | undefined>(initialFilters.category);
   const [location, setLocation] = useState<string | undefined>(initialFilters.location);
   const [workMode, setWorkMode] = useState<string | undefined>(initialFilters.workMode);
@@ -29,29 +30,54 @@ export default function JobsSearchClient({ initialJobs, categories, initialFilte
   const [page, setPage] = useState(1);
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQ(q);
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [q]);
+
+  useEffect(() => {
+    const trimmed = q.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      searchService
+        .suggest(trimmed)
+        .then((res) => {
+          if (!cancelled) setSuggestions(res.suggestions || []);
+        })
+        .catch(() => {
+          if (!cancelled) setSuggestions([]);
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [q]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ['searchJobs', q, category, location, workMode, level, page],
+    queryKey: ['searchJobs', debouncedQ, category, location, workMode, level, page],
     queryFn: () =>
-      searchService.searchJobs({ q, category, location, workMode, level, page, limit: 10 }),
+      searchService.searchJobs({ q: debouncedQ, category, location, workMode, level, page, limit: 10 }),
     initialData:
       page === 1 &&
-      q === (initialFilters.q || '') &&
+      debouncedQ === (initialFilters.q || '') &&
       category === initialFilters.category &&
       location === initialFilters.location &&
       !workMode &&
       !level
-        ? { q, ...initialJobs }
+        ? { q: debouncedQ, ...initialJobs }
         : undefined,
   });
 
-  const handleSuggest = async (val: string) => {
+  const handleSuggest = (val: string) => {
     setQ(val);
-    if (val.trim().length >= 2) {
-      const res = await searchService.suggest(val).catch(() => ({ suggestions: [] }));
-      setSuggestions(res.suggestions || []);
-    } else {
-      setSuggestions([]);
-    }
   };
 
   return (
@@ -67,19 +93,14 @@ export default function JobsSearchClient({ initialJobs, categories, initialFilte
       </div>
 
       <Card style={{ marginBottom: 24, borderRadius: 12 }}>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: 12,
-          }}
-        >
+        <div className="jobs-filter-grid">
           <AutoComplete
             value={q}
             options={suggestions.map((s) => ({ value: s }))}
             onSearch={handleSuggest}
             onSelect={(val) => {
               setQ(val);
+              setDebouncedQ(val);
               setPage(1);
             }}
             placeholder="Từ khóa, kỹ năng, vị trí..."
@@ -151,7 +172,10 @@ export default function JobsSearchClient({ initialJobs, categories, initialFilte
             type="primary"
             size="large"
             icon={<SearchOutlined />}
-            onClick={() => setPage(1)}
+            onClick={() => {
+              setDebouncedQ(q);
+              setPage(1);
+            }}
           >
             Lọc kết quả
           </Button>

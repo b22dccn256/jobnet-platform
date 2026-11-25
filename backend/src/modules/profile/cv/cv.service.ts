@@ -73,7 +73,7 @@ export class CvService {
     const user = await this.userModel
       .findById(userId)
       .select(
-        'email role fullName phone avatar bio skills desiredTitle desiredLevel desiredSalaryMin desiredLocation cvUrl cvTemplate isCvPublic cvShareToken',
+        'email role fullName phone avatar coverImage gender dateOfBirth nationality address website isVerified bio skills desiredTitle desiredLevel desiredSalaryMin desiredLocation cvUrl cvTemplate isCvPublic cvShareToken',
       )
       .lean()
       .exec();
@@ -110,6 +110,13 @@ export class CvService {
         fullName: user.fullName,
         phone: user.phone,
         avatar: user.avatar,
+        coverImage: user.coverImage,
+        gender: user.gender,
+        dateOfBirth: user.dateOfBirth,
+        nationality: user.nationality || 'Việt Nam',
+        address: user.address,
+        website: user.website,
+        isVerified: Boolean(user.isVerified),
         bio: user.bio,
         skills: user.skills || [],
         desiredTitle: user.desiredTitle,

@@ -1,8 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Space, Tag } from 'antd';
+import { usePathname, useRouter } from 'next/navigation';
+import { Tag } from 'antd';
 import {
   BulbOutlined,
   CrownOutlined,
@@ -25,30 +26,29 @@ const ITEMS = [
 
 export default function EmployerNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const company = useSelector((state: RootState) => state.auth.company);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 12,
-        padding: '12px 16px',
-        marginBottom: 24,
-        borderRadius: 12,
-        background: '#ffffff',
-        border: '1px solid #e2e8f0',
-      }}
-    >
-      <Space wrap size={6}>
+    <div className="emp-subnav">
+      <div className="emp-subnav__links">
         {ITEMS.map((item) => {
-          const active = pathname === item.href;
+          const active =
+            item.href === '/employer/jobs'
+              ? pathname === '/employer/jobs' ||
+                (pathname.startsWith('/employer/jobs/') && pathname !== '/employer/jobs/new')
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
+              onMouseEnter={() => router.prefetch(item.href)}
               className={`site-nav__link${active ? ' is-active' : ''}`}
             >
               {item.icon}
@@ -56,8 +56,12 @@ export default function EmployerNav() {
             </Link>
           );
         })}
-      </Space>
-      {company?.name && <Tag color="blue">{company.name}</Tag>}
+      </div>
+      {mounted && company?.name && (
+        <Tag color="blue" style={{ margin: 0 }}>
+          {company.name}
+        </Tag>
+      )}
     </div>
   );
 }

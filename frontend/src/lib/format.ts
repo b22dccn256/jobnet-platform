@@ -38,3 +38,28 @@ export const HOME_BY_ROLE: Record<UserRole, string> = {
   employer: '/employer/dashboard',
   candidate: '/jobs',
 };
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+
+/** Resolve either a full external URL or an uploaded storage key into a browser-loadable URL. */
+export function resolveAssetUrl(raw?: string | null): string {
+  if (!raw) return '';
+  if (/^(https?:\/\/|data:|blob:)/i.test(raw)) return raw;
+  return `${API_BASE.replace(/\/+$/, '')}/storage/file?key=${encodeURIComponent(raw)}`;
+}
+
+export function formatMonthYear(value?: string | Date | null): string {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
+export function formatPeriod(start?: string | Date | null, end?: string | Date | null): string {
+  const s = formatMonthYear(start);
+  const e = formatMonthYear(end);
+  if (s && e) return `${s} - ${e}`;
+  if (s) return `${s} - Hiện tại`;
+  if (e) return `Đến ${e}`;
+  return '';
+}

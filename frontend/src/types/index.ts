@@ -13,6 +13,12 @@ export interface User {
   fullName?: string;
   phone?: string;
   avatar?: string;
+  coverImage?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  nationality?: string;
+  address?: string;
+  website?: string;
   bio?: string;
   skills?: string[];
   desiredTitle?: string;
@@ -152,13 +158,46 @@ export interface JobRecommendationItem {
 
 export interface CandidateCvData {
   profile: User & { cvTemplate: CvTemplateType; isCvPublic: boolean };
-  educations: Array<{ _id?: string; school?: string; major?: string; degree?: string; startDate?: string; endDate?: string }>;
-  workExperiences: Array<{ _id?: string; position?: string; company?: string; startDate?: string; endDate?: string; description?: string }>;
-  projects: Array<{ _id?: string; name?: string; description?: string; technologies?: string[]; url?: string }>;
-  courses: Array<{ _id?: string; name?: string; organization?: string; date?: string }>;
+  educations: Array<{
+    _id?: string;
+    school?: string;
+    major?: string;
+    degree?: string;
+    startDate?: string;
+    endDate?: string;
+    description?: string;
+  }>;
+  workExperiences: Array<{
+    _id?: string;
+    position?: string;
+    company?: string;
+    startDate?: string;
+    endDate?: string;
+    description?: string;
+  }>;
+  projects: Array<{
+    _id?: string;
+    name?: string;
+    description?: string;
+    technologies?: string[];
+    url?: string;
+  }>;
+  courses: Array<{
+    _id?: string;
+    name?: string;
+    organization?: string;
+    date?: string;
+    description?: string;
+  }>;
   languages: Array<{ _id?: string; name?: string; level?: string }>;
   health: Array<{ _id?: string; height?: number; weight?: number; note?: string }>;
-  otherInfo: Array<{ _id?: string; content?: string }>;
+  otherInfo: Array<{
+    _id?: string;
+    content?: string;
+    religion?: string;
+    hometown?: string;
+    emergencyContact?: string;
+  }>;
   completeness: number;
   shareUrl: string | null;
 }

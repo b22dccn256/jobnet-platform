@@ -1,18 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { Button, Card, Empty, Popconfirm, Tag, message } from 'antd';
+import { Button, Card, Empty, Popconfirm, Skeleton, Tag, message } from 'antd';
+import { CalendarOutlined, DollarCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import SmartAvatar from '@/components/common/SmartAvatar';
 import { getErrorMessage } from '@/lib/error';
+import { formatSalary } from '@/lib/format';
 import { applicationsService } from '@/services/applications.service';
 import type { ApplicationStatus } from '@/types';
 
 const STATUS_COLOR: Record<ApplicationStatus, string> = {
-  applied: 'blue',
+  applied: 'processing',
   contacted: 'cyan',
-  interview: 'orange',
-  hired: 'green',
-  rejected: 'red',
+  interview: 'warning',
+  hired: 'success',
+  rejected: 'error',
 };
 
 const STATUS_LABEL: Record<ApplicationStatus, string> = {
@@ -41,64 +44,88 @@ export default function AppliedJobsPage() {
 
   return (
     <div className="container section">
-      <h1 className="section__title" style={{ marginBottom: 20 }}>
-        Lịch sử việc làm đã ứng tuyển
-      </h1>
+      <div className="section__head">
+        <div>
+          <h1 className="section__title">Việc làm đã ứng tuyển</h1>
+          <p className="section__subtitle">Theo dõi tiến độ phản hồi hồ sơ từ doanh nghiệp</p>
+        </div>
+        {data?.total ? <Tag color="blue">{data.total} đơn ứng tuyển</Tag> : null}
+      </div>
 
       {isLoading ? (
-        <Card>Đang tải...</Card>
+        <Card style={{ borderRadius: 12 }}>
+          <Skeleton active avatar paragraph={{ rows: 3 }} />
+        </Card>
       ) : data?.items && data.items.length > 0 ? (
-        <div style={{ display: 'grid', gap: 14 }}>
+        <div className="emp-cand-list">
           {data.items.map((app) => {
             const job = typeof app.job === 'object' ? app.job : null;
             const comp = job && typeof job.company === 'object' ? job.company : null;
+            const compName = comp?.name || job?.companyName || 'Doanh nghiệp';
+
             return (
-              <Card key={app._id} style={{ borderRadius: 12 }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    alignItems: 'center',
-                  }}
-                >
-                  <div>
+              <div key={app._id} className="emp-cand-card">
+                <div className="emp-cand-card__main">
+                  <SmartAvatar
+                    src={comp?.logo || job?.companyLogo}
+                    name={compName}
+                    className="job-card__logo"
+                  />
+                  <div className="emp-cand-card__info">
                     {job ? (
-                      <Link href={`/jobs/${job._id}`} style={{ fontSize: 16, fontWeight: 600 }}>
+                      <Link href={`/jobs/${job._id}`} className="emp-cand-card__name" style={{ fontWeight: 600 }}>
                         {job.title}
                       </Link>
                     ) : (
-                      <span>Tin tuyển dụng</span>
+                      <strong className="emp-cand-card__name">Tin tuyển dụng</strong>
                     )}
-                    <p style={{ margin: '4px 0', color: '#64748b', fontSize: 13 }}>
-                      {comp?.name || ''} · Ngày nộp:{' '}
-                      {new Date(app.appliedAt).toLocaleDateString('vi-VN')}
-                    </p>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                    <Tag color={STATUS_COLOR[app.status]}>
-                      {STATUS_LABEL[app.status] || app.status}
-                    </Tag>
-                    {app.status === 'applied' && (
-                      <Popconfirm
-                        title="Rút đơn ứng tuyển này?"
-                        onConfirm={() => withdrawMutation.mutate(app._id)}
-                      >
-                        <Button danger size="small">
-                          Rút đơn
-                        </Button>
-                      </Popconfirm>
-                    )}
+                    <div className="emp-cand-card__role">{compName}</div>
+                    <div className="emp-cand-card__meta">
+                      {job && (
+                        <span>
+                          <DollarCircleOutlined /> {formatSalary(job.salaryMin, job.salaryMax)}
+                        </span>
+                      )}
+                      {job?.location && (
+                        <span>
+                          <EnvironmentOutlined /> {job.location}
+                        </span>
+                      )}
+                      <span>
+                        <CalendarOutlined /> Ngày nộp:{' '}
+                        {new Date(app.appliedAt).toLocaleDateString('vi-VN')}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </Card>
+
+                <div className="emp-cand-card__actions">
+                  <Tag color={STATUS_COLOR[app.status]} style={{ margin: 0, padding: '4px 10px' }}>
+                    {STATUS_LABEL[app.status] || app.status}
+                  </Tag>
+                  {app.status === 'applied' && (
+                    <Popconfirm
+                      title="Rút đơn ứng tuyển này?"
+                      onConfirm={() => withdrawMutation.mutate(app._id)}
+                    >
+                      <Button danger size="small">
+                        Rút đơn
+                      </Button>
+                    </Popconfirm>
+                  )}
+                </div>
+              </div>
             );
           })}
         </div>
       ) : (
-        <Empty description="Bạn chưa ứng tuyển công việc nào" />
+        <Card style={{ borderRadius: 14 }}>
+          <Empty description="Bạn chưa ứng tuyển công việc nào">
+            <Link href="/jobs">
+              <Button type="primary">Khám phá việc làm ngay</Button>
+            </Link>
+          </Empty>
+        </Card>
       )}
     </div>
   );

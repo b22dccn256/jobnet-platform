@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Button, Card, Popconfirm, Space, Table, Tag, Tooltip, message } from 'antd';
+import { FileAddOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import EmployerNav from '@/components/employer/EmployerNav';
 import { formatSalary } from '@/lib/format';
@@ -9,9 +10,9 @@ import { jobsService } from '@/services/jobs.service';
 import type { Job, JobStatus } from '@/types';
 
 const STATUS_BADGE: Record<JobStatus, { color: string; label: string }> = {
-  pending: { color: 'gold', label: 'Chờ duyệt' },
-  approved: { color: 'green', label: 'Đang hiển thị' },
-  rejected: { color: 'red', label: 'Bị từ chối' },
+  pending: { color: 'warning', label: 'Chờ duyệt' },
+  approved: { color: 'success', label: 'Đang hiển thị' },
+  rejected: { color: 'error', label: 'Bị từ chối' },
   closed: { color: 'default', label: 'Đã đóng' },
 };
 
@@ -41,7 +42,22 @@ export default function EmployerJobsPage() {
   return (
     <div className="container section">
       <EmployerNav />
-      <Card title="Quản lý tin tuyển dụng của doanh nghiệp" style={{ borderRadius: 14 }}>
+
+      <div className="section__head">
+        <div>
+          <h1 className="section__title">Quản lý tin tuyển dụng</h1>
+          <p className="section__subtitle">
+            Theo dõi trạng thái xét duyệt, chỉnh sửa hoặc đóng các vị trí đã đủ nhân sự
+          </p>
+        </div>
+        <Link href="/employer/jobs/new">
+          <Button type="primary" icon={<FileAddOutlined />}>
+            Đăng tin mới
+          </Button>
+        </Link>
+      </div>
+
+      <Card style={{ borderRadius: 14 }}>
         <Table<Job>
           rowKey="_id"
           loading={isLoading}
@@ -51,11 +67,19 @@ export default function EmployerJobsPage() {
             {
               title: 'Vị trí tuyển dụng',
               dataIndex: 'title',
-              render: (val, r) => <Link href={`/employer/jobs/${r._id}`}>{val}</Link>,
+              render: (val, r) => (
+                <Link href={`/employer/jobs/${r._id}`} style={{ fontWeight: 600 }}>
+                  {val}
+                </Link>
+              ),
             },
             {
               title: 'Mức lương',
-              render: (_, r) => formatSalary(r.salaryMin, r.salaryMax),
+              render: (_, r) => (
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {formatSalary(r.salaryMin, r.salaryMax)}
+                </span>
+              ),
             },
             { title: 'Địa điểm', dataIndex: 'location' },
             {

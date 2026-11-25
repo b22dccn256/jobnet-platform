@@ -1,23 +1,18 @@
 import Link from 'next/link';
 import { Tag } from 'antd';
 import { DollarCircleOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import SmartAvatar from '@/components/common/SmartAvatar';
 import { formatSalary, LEVEL_LABEL, WORK_MODE_LABEL } from '@/lib/format';
 import type { Job } from '@/types';
 
 export default function JobCardItem({ job, badge }: { job: Job; badge?: React.ReactNode }) {
   const companyObj = typeof job.company === 'object' && job.company !== null ? job.company : null;
   const companyName = companyObj?.name || job.companyName || 'Doanh nghiệp tuyển dụng';
-  const companyLogo = companyObj?.logo || job.companyLogo || '';
+  const companyLogo = companyObj?.logo || job.companyLogo;
 
   return (
-    <Link href={`/jobs/${job._id}`} className="job-card">
-      <div className="job-card__logo">
-        {companyLogo ? (
-          <img src={companyLogo} alt={companyName} />
-        ) : (
-          companyName.charAt(0).toUpperCase()
-        )}
-      </div>
+    <Link href={`/jobs/${job._id}`} prefetch={true} className="job-card">
+      <SmartAvatar src={companyLogo} name={companyName} className="job-card__logo" />
 
       <div className="job-card__body">
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>

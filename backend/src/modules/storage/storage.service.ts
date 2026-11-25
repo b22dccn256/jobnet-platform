@@ -52,7 +52,12 @@ export class StorageService implements OnModuleInit {
 
   async onModuleInit() {
     try {
-      const exists = await this.client.bucketExists(this.bucket);
+      const exists = await Promise.race<boolean>([
+        this.client.bucketExists(this.bucket),
+        new Promise<boolean>((_, reject) =>
+          setTimeout(() => reject(new Error('MinIO connection timeout')), 1500),
+        ),
+      ]);
       if (!exists) {
         await this.client.makeBucket(this.bucket);
       }
@@ -60,8 +65,10 @@ export class StorageService implements OnModuleInit {
       this.logger.log(`MinIO connected (bucket: ${this.bucket})`);
     } catch (error) {
       this.minioReady = false;
+      const errObj = error as { message?: string; code?: string } | undefined;
+      const reason = errObj?.message || errObj?.code || String(error || 'connection failed');
       this.logger.warn(
-        `MinIO unavailable (${(error as Error).message}). Using local disk fallback at ${this.localUploadDir}`,
+        `MinIO unavailable (${reason}). Using local disk fallback at ${this.localUploadDir}`,
       );
     }
   }

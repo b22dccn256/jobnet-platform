@@ -59,6 +59,12 @@ export const cvService = {
     payload: Record<string, unknown>,
   ) => api.post<T>(`/${section}`, payload).then((res) => res.data),
 
+  updateSectionItem: <T = Record<string, unknown>>(
+    section: ProfileSectionName,
+    id: string,
+    payload: Record<string, unknown>,
+  ) => api.patch<T>(`/${section}/${id}`, payload).then((res) => res.data),
+
   deleteSectionItem: (section: ProfileSectionName, id: string) =>
     api.delete(`/${section}/${id}`).then((res) => res.data),
 };

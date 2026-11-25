@@ -18,6 +18,12 @@ export class CreateCourseDto {
   @IsOptional()
   @IsDateString()
   date?: string;
+
+  @ApiPropertyOptional({ example: 'Hoàn thành khóa kiến trúc hệ thống phân tán và Docker' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  description?: string;
 }
 
 export class UpdateCourseDto {
@@ -38,4 +44,10 @@ export class UpdateCourseDto {
   @IsOptional()
   @IsDateString()
   date?: string;
+
+  @ApiPropertyOptional({ example: 'Hoàn thành khóa kiến trúc hệ thống phân tán và Docker' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  description?: string;
 }

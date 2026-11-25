@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Card, Form, Input, InputNumber, Popconfirm, Table, Tag, message } from 'antd';
+import { Button, Card, Form, Input, InputNumber, Popconfirm, Space, Table, Tag, message } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AdminNav from '@/components/admin/AdminNav';
@@ -10,6 +10,7 @@ import { employerService } from '@/services/employer.service';
 import type { PremiumPackage } from '@/types';
 
 export default function AdminPackagesPage() {
+  const [form] = Form.useForm();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -21,6 +22,7 @@ export default function AdminPackagesPage() {
     mutationFn: adminService.createPackage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['premiumPackages'] });
+      form.resetFields();
       message.success('Đã thêm gói dịch vụ mới');
     },
     onError: (err) => message.error(getErrorMessage(err, 'Không thể tạo gói')),
@@ -38,9 +40,20 @@ export default function AdminPackagesPage() {
     <div className="container section">
       <AdminNav />
 
+      <div className="section__head" style={{ marginBottom: 16 }}>
+        <div>
+          <h1 className="section__title">Quản lý gói dịch vụ Premium</h1>
+          <p className="section__subtitle">
+            Thiết lập mức phí, hạn mức tin đăng và quyền lợi mở khóa gợi ý ứng viên cho doanh nghiệp
+          </p>
+        </div>
+      </div>
+
       <Card title="Tạo gói đăng tin Premium mới" style={{ borderRadius: 14, marginBottom: 24 }}>
         <Form
+          form={form}
           layout="vertical"
+          requiredMark={false}
           onFinish={(v) =>
             createMutation.mutate({
               name: v.name,
@@ -55,10 +68,10 @@ export default function AdminPackagesPage() {
           }
         >
           <div className="form-grid-2">
-            <Form.Item name="name" label="Tên gói" rules={[{ required: true }]}>
+            <Form.Item name="name" label="Tên gói" rules={[{ required: true, message: 'Nhập tên gói' }]}>
               <Input placeholder="VD: Gói SME Chuyên Nghiệp" />
             </Form.Item>
-            <Form.Item name="price" label="Giá gói (VND)" rules={[{ required: true }]}>
+            <Form.Item name="price" label="Giá gói (VND)" rules={[{ required: true, message: 'Nhập giá gói' }]}>
               <InputNumber style={{ width: '100%' }} min={0} step={100000} />
             </Form.Item>
             <Form.Item name="durationDays" label="Thời hạn (ngày)" initialValue={30}>
@@ -84,22 +97,47 @@ export default function AdminPackagesPage() {
           dataSource={data?.items || []}
           scroll={{ x: 680 }}
           columns={[
-            { title: 'Tên gói', dataIndex: 'name' },
+            {
+              title: 'Tên gói',
+              dataIndex: 'name',
+              render: (v: string) => <span style={{ fontWeight: 600, color: '#0f172a' }}>{v}</span>,
+            },
             {
               title: 'Giá (VND)',
-              render: (_, r) => `${r.price.toLocaleString('vi-VN')} đ`,
+              render: (_, r) => (
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#1d4ed8' }}>
+                  {r.price.toLocaleString('vi-VN')} đ
+                </span>
+              ),
             },
-            { title: 'Thời hạn (ngày)', dataIndex: 'durationDays' },
-            { title: 'Lượt đăng', dataIndex: 'postLimit' },
+            {
+              title: 'Thời hạn',
+              dataIndex: 'durationDays',
+              render: (v: number) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{v} ngày</span>,
+            },
+            {
+              title: 'Lượt đăng',
+              dataIndex: 'postLimit',
+              render: (v: number) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{v} tin</span>,
+            },
             {
               title: 'Quyền lợi',
-              render: (_, r) => (r.features || []).map((f) => <Tag key={f}>{f}</Tag>),
+              render: (_, r) => (
+                <Space size={[6, 6]} wrap>
+                  {(r.features || []).map((f) => (
+                    <Tag key={f} style={{ margin: 0 }}>
+                      {f}
+                    </Tag>
+                  ))}
+                </Space>
+              ),
             },
             {
-              title: 'Xóa',
+              title: 'Thao tác',
+              width: 96,
               render: (_, r) => (
                 <Popconfirm title="Xóa gói này?" onConfirm={() => deleteMutation.mutate(r._id)}>
-                  <Button danger size="small" icon={<DeleteOutlined />} />
+                  <Button danger size="small" aria-label="Xóa gói dịch vụ" icon={<DeleteOutlined />} />
                 </Popconfirm>
               ),
             },

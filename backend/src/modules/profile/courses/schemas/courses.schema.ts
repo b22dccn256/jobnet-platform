@@ -16,6 +16,9 @@ export class Course {
 
   @Prop()
   date: Date;
+
+  @Prop()
+  description?: string;
 }
 
 export const CourseSchema = SchemaFactory.createForClass(Course);

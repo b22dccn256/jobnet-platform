@@ -22,6 +22,9 @@ export class Education {
 
   @Prop()
   endDate: Date;
+
+  @Prop()
+  description?: string;
 }
 
 export const EducationSchema = SchemaFactory.createForClass(Education);

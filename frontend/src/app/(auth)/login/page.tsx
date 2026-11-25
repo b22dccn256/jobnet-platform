@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Divider, Form, Input, message } from 'antd';
-import { LockOutlined, MailOutlined } from '@ant-design/icons';
+import { LockOutlined, MailOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import AuthShell from '@/components/common/AuthShell';
 import { getErrorMessage } from '@/lib/error';
@@ -13,8 +13,15 @@ import { authService, type LoginPayload } from '@/services/auth.service';
 import { employerService } from '@/services/employer.service';
 import { setCompany, setSession } from '@/store/authSlice';
 
+const DEMO_ACCOUNTS = [
+  { label: 'Ứng viên', email: 'candidate@jobnet.local' },
+  { label: 'Nhà tuyển dụng', email: 'employer@jobnet.local' },
+  { label: 'Quản trị viên', email: 'admin@jobnet.local' },
+];
+
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [form] = Form.useForm<LoginPayload>();
   const router = useRouter();
   const dispatch = useDispatch();
 
@@ -46,7 +53,27 @@ export default function LoginPage() {
         <p className="auth-card__subtitle">Tiếp tục hành trình nghề nghiệp của bạn</p>
       </div>
 
-      <Form layout="vertical" onFinish={onFinish} requiredMark={false} size="large">
+      <div className="demo-login-bar">
+        <span className="demo-login-bar__label">
+          <ThunderboltOutlined /> Dùng nhanh tài khoản mẫu:
+        </span>
+        <div className="demo-login-bar__pills">
+          {DEMO_ACCOUNTS.map((acc) => (
+            <button
+              key={acc.email}
+              type="button"
+              className="demo-login-pill"
+              onClick={() => {
+                form.setFieldsValue({ email: acc.email, password: '123456' });
+              }}
+            >
+              {acc.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false} size="large">
         <Form.Item
           name="email"
           label="Địa chỉ Email"
@@ -78,7 +105,7 @@ export default function LoginPage() {
       <Divider plain>hoặc</Divider>
 
       <p className="auth-card__footer">
-        Chưa có tài khoản? <Link href="/register">Đăng ký ngay</Link>
+        Chưa có tài khoản? <Link href="/register">Tạo tài khoản mới</Link>
       </p>
     </AuthShell>
   );

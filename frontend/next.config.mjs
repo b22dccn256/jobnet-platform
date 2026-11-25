@@ -1,3 +1,11 @@
+import { PHASE_DEVELOPMENT_SERVER } from 'next/constants.js';
+
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
-export default nextConfig;
+export default function nextConfig(phase) {
+  return {
+    distDir: phase === PHASE_DEVELOPMENT_SERVER ? '.next-dev' : '.next',
+    experimental: {
+      optimizePackageImports: ['antd', '@ant-design/icons', 'recharts'],
+    },
+  };
+}

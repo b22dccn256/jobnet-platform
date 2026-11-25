@@ -16,10 +16,21 @@ async function fetchInitialJobs(searchParams: Record<string, string | undefined>
   }
   qs.set('limit', '10');
 
+  const start = Date.now();
+  if (process.env.NODE_ENV !== 'production') {
+    console.info(`[SSR -->] GET /jobs?${qs.toString()} & /categories`);
+  }
+
   try {
     const [jobsRes, catsRes] = await Promise.all([
-      fetch(`${API_BASE}/jobs?${qs.toString()}`, { cache: 'no-store' }),
-      fetch(`${API_BASE}/categories?limit=100`, { cache: 'no-store' }),
+      fetch(`${API_BASE}/jobs?${qs.toString()}`, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(4000),
+      }),
+      fetch(`${API_BASE}/categories?limit=100`, {
+        next: { revalidate: 300 },
+        signal: AbortSignal.timeout(4000),
+      }),
     ]);
     const initialJobs: PaginatedResponse<Job> = jobsRes.ok
       ? await jobsRes.json()
@@ -27,8 +38,16 @@ async function fetchInitialJobs(searchParams: Record<string, string | undefined>
     const catsJson: PaginatedResponse<Category> = catsRes.ok
       ? await catsRes.json()
       : { items: [], total: 0, page: 1, limit: 100 };
+    if (process.env.NODE_ENV !== 'production') {
+      console.info(
+        `[SSR <--] /jobs status=${jobsRes.status}, categories=${catsRes.status} (${Date.now() - start}ms)`,
+      );
+    }
     return { initialJobs, categories: catsJson.items || [] };
-  } catch {
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(`[SSR ERR] /jobs (${Date.now() - start}ms):`, (err as Error).message);
+    }
     return {
       initialJobs: { items: [], total: 0, page: 1, limit: 10 },
       categories: [],

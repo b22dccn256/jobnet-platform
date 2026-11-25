@@ -26,12 +26,31 @@ interface IndexedJobPayload {
   category?: { _id?: unknown; name?: string; slug?: string } | unknown;
 }
 
+function formatErrorMessage(error: unknown): string {
+  if (!error || typeof error !== 'object') return String(error || 'unknown error');
+  const err = error as { message?: string; code?: string; errors?: unknown[] };
+  if (err.message) return err.message;
+  if (err.code) return err.code;
+  if (Array.isArray(err.errors) && err.errors.length > 0) {
+    return err.errors
+      .map((inner) => {
+        const item = inner as { message?: string; code?: string } | undefined;
+        return item?.message || item?.code || String(inner);
+      })
+      .filter(Boolean)
+      .join('; ');
+  }
+  return String(error);
+}
+
 @Injectable()
 export class SearchService implements OnModuleInit {
   private readonly logger = new Logger(SearchService.name);
   private readonly index = 'jobs';
   private client: Client;
   private esAvailable = false;
+  private lastEsCheckAt = 0;
+  private readonly esRetryCooldownMs = 60_000;
 
   constructor(
     cfg: ConfigService,
@@ -39,17 +58,39 @@ export class SearchService implements OnModuleInit {
   ) {
     this.client = new Client({
       node: cfg.get<string>('ELASTICSEARCH_NODE') || 'http://localhost:9200',
+      requestTimeout: 1500,
+      maxRetries: 0,
     });
   }
 
   async onModuleInit() {
+    this.lastEsCheckAt = Date.now();
     try {
       await this.ensureIndex();
     } catch (error) {
       this.esAvailable = false;
       this.logger.warn(
-        `Elasticsearch unavailable (${(error as Error).message}). Search will fallback to MongoDB.`,
+        `Elasticsearch unavailable (${formatErrorMessage(error)}). Search will fallback to MongoDB.`,
       );
+    }
+  }
+
+  private async ensureEsReady(context: string): Promise<boolean> {
+    if (this.esAvailable) return true;
+    const now = Date.now();
+    if (now - this.lastEsCheckAt < this.esRetryCooldownMs) {
+      return false;
+    }
+    this.lastEsCheckAt = now;
+    try {
+      await this.ensureIndex();
+      return true;
+    } catch (error) {
+      this.esAvailable = false;
+      this.logger.warn(
+        `Elasticsearch ${context} fallback to MongoDB: ${formatErrorMessage(error)}`,
+      );
+      return false;
     }
   }
 
@@ -145,25 +186,33 @@ export class SearchService implements OnModuleInit {
   async indexJob(job: IndexedJobPayload) {
     const id = String(job._id || job.id || '');
     if (!id) return;
-    if (!this.esAvailable) {
-      await this.ensureIndex();
+    if (!(await this.ensureEsReady('index'))) return;
+    try {
+      await this.client.index({
+        index: this.index,
+        id,
+        document: this.toEsDocument(job),
+        refresh: true,
+      });
+    } catch (error) {
+      this.esAvailable = false;
+      this.lastEsCheckAt = Date.now();
+      throw error;
     }
-    await this.client.index({
-      index: this.index,
-      id,
-      document: this.toEsDocument(job),
-      refresh: true,
-    });
   }
 
   async removeJob(id: string) {
     if (!id) return;
-    if (!this.esAvailable) {
-      await this.ensureIndex();
+    if (!(await this.ensureEsReady('remove'))) return;
+    try {
+      await this.client.delete({ index: this.index, id }).catch((err: { meta?: { statusCode?: number } }) => {
+        if (err?.meta?.statusCode !== 404) throw err;
+      });
+    } catch (error) {
+      this.esAvailable = false;
+      this.lastEsCheckAt = Date.now();
+      throw error;
     }
-    await this.client.delete({ index: this.index, id }).catch((err: { meta?: { statusCode?: number } }) => {
-      if (err?.meta?.statusCode !== 404) throw err;
-    });
   }
 
   async reindexAllApproved() {
@@ -182,10 +231,11 @@ export class SearchService implements OnModuleInit {
     const page = filters.page || 1;
     const limit = filters.limit || 10;
 
+    if (!(await this.ensureEsReady('search'))) {
+      return this.searchFallbackMongo(q, filters);
+    }
+
     try {
-      if (!this.esAvailable) {
-        await this.ensureIndex();
-      }
       const must: Record<string, unknown>[] = [];
       const filterClauses: Record<string, unknown>[] = [{ term: { status: JobStatus.Approved } }];
 
@@ -250,7 +300,8 @@ export class SearchService implements OnModuleInit {
       return { q, items, total, page, limit, engine: 'elasticsearch' };
     } catch (error) {
       this.esAvailable = false;
-      this.logger.warn(`Elasticsearch search fallback to MongoDB: ${(error as Error).message}`);
+      this.lastEsCheckAt = Date.now();
+      this.logger.warn(`Elasticsearch search fallback to MongoDB: ${formatErrorMessage(error)}`);
       return this.searchFallbackMongo(q, filters);
     }
   }
@@ -291,24 +342,75 @@ export class SearchService implements OnModuleInit {
 
     const col = this.connection.collection('jobs');
     const mongoFilter = { $and: andConditions };
-    const [items, total] = await Promise.all([
+    const [rawItems, total] = await Promise.all([
       col.find(mongoFilter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).toArray(),
       col.countDocuments(mongoFilter),
     ]);
 
+    const companyIds = Array.from(
+      new Set(
+        rawItems
+          .map((item) => item.company)
+          .filter((c): c is Types.ObjectId => c instanceof Types.ObjectId),
+      ),
+    );
+    let companyMap = new Map<string, { _id: Types.ObjectId; name?: string; logo?: string }>();
+    if (companyIds.length > 0) {
+      const companies = await this.connection
+        .collection('companies')
+        .find({ _id: { $in: companyIds } })
+        .project<{ _id: Types.ObjectId; name?: string; logo?: string }>({ name: 1, logo: 1 })
+        .toArray();
+      companyMap = new Map(companies.map((c) => [String(c._id), c]));
+    }
+
+    const items = rawItems.map((item) => {
+      const comp = item.company instanceof Types.ObjectId ? companyMap.get(String(item.company)) : null;
+      return comp ? { ...item, company: comp, companyName: comp.name || '', companyLogo: comp.logo || '' } : item;
+    });
+
     return { q, items, total, page, limit, engine: 'mongodb-fallback' };
   }
 
-  async suggest(prefix: string) {
+  private async suggestFallbackMongo(
+    clean: string,
+  ): Promise<{ prefix: string; suggestions: string[]; engine: string }> {
+    const regex = new RegExp(escapeRegex(clean), 'i');
+    const docs = await this.connection
+      .collection('jobs')
+      .find({ status: JobStatus.Approved, $or: [{ title: regex }, { skills: regex }] })
+      .project<{ title?: string; skills?: string[] }>({ title: 1, skills: 1 })
+      .limit(8)
+      .toArray();
+    const suggestions = new Set<string>();
+    for (const doc of docs) {
+      if (doc.title && regex.test(doc.title)) suggestions.add(doc.title);
+      for (const skill of doc.skills || []) {
+        if (regex.test(skill)) suggestions.add(skill);
+      }
+    }
+    return {
+      prefix: clean,
+      suggestions: Array.from(suggestions).slice(0, 8),
+      engine: 'mongodb-fallback',
+    };
+  }
+
+  async suggest(prefix: string): Promise<{ prefix: string; suggestions: string[]; engine: string }> {
     const clean = (prefix || '').trim();
     if (!clean) {
-      return { prefix: '', suggestions: [] };
+      return {
+        prefix: '',
+        suggestions: [],
+        engine: this.esAvailable ? 'elasticsearch' : 'mongodb-fallback',
+      };
+    }
+
+    if (!(await this.ensureEsReady('suggest'))) {
+      return this.suggestFallbackMongo(clean);
     }
 
     try {
-      if (!this.esAvailable) {
-        await this.ensureIndex();
-      }
       const result = await this.client.search<{ title?: string; skills?: string[] }>({
         index: this.index,
         size: 8,
@@ -338,25 +440,9 @@ export class SearchService implements OnModuleInit {
         engine: 'elasticsearch',
       };
     } catch {
-      const regex = new RegExp(escapeRegex(clean), 'i');
-      const docs = await this.connection
-        .collection('jobs')
-        .find({ status: JobStatus.Approved, $or: [{ title: regex }, { skills: regex }] })
-        .project<{ title?: string; skills?: string[] }>({ title: 1, skills: 1 })
-        .limit(8)
-        .toArray();
-      const suggestions = new Set<string>();
-      for (const doc of docs) {
-        if (doc.title && regex.test(doc.title)) suggestions.add(doc.title);
-        for (const skill of doc.skills || []) {
-          if (regex.test(skill)) suggestions.add(skill);
-        }
-      }
-      return {
-        prefix: clean,
-        suggestions: Array.from(suggestions).slice(0, 8),
-        engine: 'mongodb-fallback',
-      };
+      this.esAvailable = false;
+      this.lastEsCheckAt = Date.now();
+      return this.suggestFallbackMongo(clean);
     }
   }
 }

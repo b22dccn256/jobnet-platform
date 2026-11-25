@@ -24,6 +24,24 @@ export class User {
   @Prop()
   avatar: string;
 
+  @Prop()
+  coverImage?: string;
+
+  @Prop({ trim: true })
+  gender?: string;
+
+  @Prop({ trim: true })
+  dateOfBirth?: string;
+
+  @Prop({ trim: true, default: 'Việt Nam' })
+  nationality?: string;
+
+  @Prop({ trim: true })
+  address?: string;
+
+  @Prop({ trim: true })
+  website?: string;
+
   @Prop({ default: true })
   isActive: boolean;
 

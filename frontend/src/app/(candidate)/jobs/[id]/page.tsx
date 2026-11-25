@@ -1,18 +1,29 @@
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import JobDetailClient from '@/components/candidate/JobDetailClient';
 import type { Job } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
-async function fetchJobServer(id: string): Promise<Job | null> {
+const fetchJobServer = cache(async (id: string): Promise<Job | null> => {
+  const start = Date.now();
   try {
-    const res = await fetch(`${API_BASE}/jobs/${id}`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/jobs/${id}`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(4000),
+    });
+    if (process.env.NODE_ENV !== 'production') {
+      console.info(`[SSR <--] GET /jobs/${id} status=${res.status} (${Date.now() - start}ms)`);
+    }
     if (!res.ok) return null;
     return res.json();
-  } catch {
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(`[SSR ERR] GET /jobs/${id} (${Date.now() - start}ms):`, (err as Error).message);
+    }
     return null;
   }
-}
+});
 
 export async function generateMetadata({
   params,
@@ -34,5 +45,5 @@ export async function generateMetadata({
 /** Server-Side Rendered (SSR) job detail page for SEO (Chapter 1 Section 1.4.1a). */
 export default async function JobDetailPage({ params }: { params: { id: string } }) {
   const initialJob = await fetchJobServer(params.id);
-  return <JobDetailClient jobId={params.id} initialJob={initialJob} />;
+  return <JobDetailClient jobId={params.id} initialJob={initialJob} fetchedAt={Date.now()} />;
 }

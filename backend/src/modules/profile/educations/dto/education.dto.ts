@@ -29,6 +29,12 @@ export class CreateEducationDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @ApiPropertyOptional({ example: 'GPA 3.4/4.0, Đồ án tốt nghiệp loại Giỏi' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  description?: string;
 }
 
 export class UpdateEducationDto {
@@ -60,4 +66,10 @@ export class UpdateEducationDto {
   @IsOptional()
   @IsDateString()
   endDate?: string;
+
+  @ApiPropertyOptional({ example: 'GPA 3.4/4.0, Đồ án tốt nghiệp loại Giỏi' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  description?: string;
 }

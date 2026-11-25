@@ -1,85 +1,80 @@
 'use client';
 
-import { Button, Card, Divider, Tag, message } from 'antd';
-import { DownloadOutlined } from '@ant-design/icons';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button, Card, Segmented, Space, message } from 'antd';
+import { ArrowLeftOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
+import CvPaperPreview from '@/components/candidate/CvPaperPreview';
 import EmployerNav from '@/components/employer/EmployerNav';
 import { getErrorMessage } from '@/lib/error';
 import { cvService } from '@/services/cv.service';
+import type { CvTemplateType } from '@/types';
 
 export default function EmployerCandidateDetailPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const [template, setTemplate] = useState<CvTemplateType | undefined>(undefined);
+  const [downloading, setDownloading] = useState(false);
+
   const { data: cv, isLoading } = useQuery({
     queryKey: ['candidateCv', params.id],
     queryFn: () => cvService.getCandidateCv(params.id),
   });
 
+  const activeTemplate = template || cv?.profile?.cvTemplate || 'modern';
+
   return (
     <div className="container section">
       <EmployerNav />
-      {isLoading || !cv ? (
-        <Card>Đang tải hồ sơ ứng viên...</Card>
-      ) : (
-        <Card
-          title={`Hồ sơ ứng viên: ${cv.profile.fullName || cv.profile.email}`}
-          extra={
+
+      <div className="section__head" style={{ marginBottom: 18 }}>
+        <Space>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => router.back()}>
+            Quay lại
+          </Button>
+          <strong style={{ fontSize: 18 }}>
+            Chi tiết CV ứng viên {cv?.profile?.fullName ? `– ${cv.profile.fullName}` : ''}
+          </strong>
+        </Space>
+
+        {cv && (
+          <Space wrap>
+            <Segmented<CvTemplateType>
+              value={activeTemplate}
+              onChange={(v) => setTemplate(v)}
+              options={[
+                { value: 'modern', label: 'Hiện đại' },
+                { value: 'classic', label: 'Cổ điển' },
+                { value: 'minimal', label: 'Tối giản' },
+              ]}
+            />
             <Button
               type="primary"
               icon={<DownloadOutlined />}
-              onClick={() =>
-                cvService
-                  .downloadPdfBlob(`/cv/candidate/${params.id}/pdf`)
-                  .catch((err) => message.error(getErrorMessage(err, 'Không thể tải PDF')))
-              }
+              loading={downloading}
+              onClick={async () => {
+                try {
+                  setDownloading(true);
+                  await cvService.downloadPdfBlob(
+                    `/cv/candidate/${params.id}/pdf?template=${activeTemplate}`,
+                  );
+                } catch (err) {
+                  message.error(getErrorMessage(err, 'Không thể tải PDF'));
+                } finally {
+                  setDownloading(false);
+                }
+              }}
             >
               Tải CV PDF
             </Button>
-          }
-          style={{ borderRadius: 14 }}
-        >
-          <p>
-            <strong>Email:</strong> {cv.profile.email} · <strong>SĐT:</strong>{' '}
-            {cv.profile.phone || 'Chưa cập nhật'} · <strong>Vị trí mong muốn:</strong>{' '}
-            {cv.profile.desiredTitle || '–'}
-          </p>
-          {cv.profile.bio && <p style={{ color: '#334155' }}>{cv.profile.bio}</p>}
+          </Space>
+        )}
+      </div>
 
-          <div style={{ margin: '12px 0' }}>
-            {(cv.profile.skills || []).map((s) => (
-              <Tag key={s} color="blue">
-                {s}
-              </Tag>
-            ))}
-          </div>
-
-          <Divider />
-          <h3>Kinh nghiệm làm việc</h3>
-          {cv.workExperiences.map((w, idx) => (
-            <div key={idx} style={{ marginBottom: 10 }}>
-              <strong>{w.position}</strong> – {w.company}
-              {w.description && <p style={{ margin: '4px 0 0', color: '#64748b' }}>{w.description}</p>}
-            </div>
-          ))}
-
-          <Divider />
-          <h3>Dự án</h3>
-          {cv.projects.map((p, idx) => (
-            <div key={idx} style={{ marginBottom: 10 }}>
-              <strong>{p.name}</strong>{' '}
-              {(p.technologies || []).map((t) => (
-                <Tag key={t}>{t}</Tag>
-              ))}
-              {p.description && <p style={{ margin: '4px 0 0', color: '#64748b' }}>{p.description}</p>}
-            </div>
-          ))}
-
-          <Divider />
-          <h3>Học vấn</h3>
-          {cv.educations.map((e, idx) => (
-            <div key={idx} style={{ marginBottom: 8 }}>
-              <strong>{e.school}</strong> – {e.degree} {e.major}
-            </div>
-          ))}
-        </Card>
+      {isLoading || !cv ? (
+        <Card>Đang tải hồ sơ ứng viên...</Card>
+      ) : (
+        <CvPaperPreview cv={cv} template={activeTemplate} />
       )}
     </div>
   );

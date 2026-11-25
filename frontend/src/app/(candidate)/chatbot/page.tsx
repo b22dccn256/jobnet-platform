@@ -1,14 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button, Card, Input, Space, Tag, message } from 'antd';
 import { RobotOutlined, SendOutlined, UserOutlined } from '@ant-design/icons';
-import { useSelector } from 'react-redux';
 import JobCardItem from '@/components/common/JobCardItem';
 import { getErrorMessage } from '@/lib/error';
 import { chatbotService, type ChatTurn } from '@/services/chatbot.service';
-import type { RootState } from '@/store';
 import type { Job } from '@/types';
 
 const SAMPLE_PROMPTS = [
@@ -22,8 +19,6 @@ interface MessageBlock extends ChatTurn {
 }
 
 export default function ChatbotPage() {
-  const router = useRouter();
-  const { accessToken } = useSelector((state: RootState) => state.auth);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<MessageBlock[]>([
@@ -36,12 +31,7 @@ export default function ChatbotPage() {
 
   const sendPrompt = async (promptText: string) => {
     const trimmed = promptText.trim();
-    if (!trimmed) return;
-    if (!accessToken) {
-      message.info('Vui lòng đăng nhập tài khoản ứng viên để trò chuyện với trợ lý AI');
-      router.push('/login');
-      return;
-    }
+    if (!trimmed || loading) return;
 
     const historyPayload: ChatTurn[] = messages.map((m) => ({ role: m.role, content: m.content }));
     setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
@@ -59,7 +49,15 @@ export default function ChatbotPage() {
         },
       ]);
     } catch (err) {
-      message.error(getErrorMessage(err, 'Không thể kết nối tới dịch vụ Chatbot'));
+      const errMsg = getErrorMessage(err, 'Không thể kết nối tới dịch vụ Chatbot');
+      message.error(errMsg);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: `Xin lỗi, hiện không thể xử lý yêu cầu (${errMsg}). Bạn vui lòng thử lại sau giây lát nhé.`,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -80,12 +78,20 @@ export default function ChatbotPage() {
 
       <Card style={{ borderRadius: 16 }}>
         <div style={{ marginBottom: 14 }}>
-          <Space wrap>
+          <Space wrap style={{ width: '100%' }}>
             {SAMPLE_PROMPTS.map((p) => (
               <Tag
                 key={p}
                 color="processing"
-                style={{ cursor: 'pointer', padding: '4px 10px' }}
+                style={{
+                  cursor: 'pointer',
+                  padding: '5px 10px',
+                  whiteSpace: 'normal',
+                  height: 'auto',
+                  lineHeight: 1.45,
+                  maxWidth: '100%',
+                  marginInlineEnd: 0,
+                }}
                 onClick={() => sendPrompt(p)}
               >
                 {p}
@@ -99,6 +105,7 @@ export default function ChatbotPage() {
             minHeight: 340,
             maxHeight: 520,
             overflowY: 'auto',
+            overflowX: 'hidden',
             padding: 16,
             borderRadius: 12,
             background: '#f8fafc',
@@ -113,7 +120,8 @@ export default function ChatbotPage() {
               key={idx}
               style={{
                 alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                maxWidth: '88%',
+                maxWidth: '100%',
+                width: m.role === 'assistant' && m.jobs?.length ? '100%' : 'fit-content',
               }}
             >
               <div
@@ -124,6 +132,7 @@ export default function ChatbotPage() {
                   color: m.role === 'user' ? '#ffffff' : '#0f172a',
                   border: m.role === 'assistant' ? '1px solid #e2e8f0' : 'none',
                   whiteSpace: 'pre-line',
+                  overflowWrap: 'anywhere',
                 }}
               >
                 <strong style={{ display: 'block', marginBottom: 4, fontSize: 12, opacity: 0.8 }}>

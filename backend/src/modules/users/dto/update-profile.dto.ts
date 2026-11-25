@@ -21,6 +21,41 @@ export class UpdateProfileDto {
   @IsString()
   avatar?: string;
 
+  @ApiPropertyOptional({ example: 'avatar/cover-12345.jpg' })
+  @IsOptional()
+  @IsString()
+  coverImage?: string;
+
+  @ApiPropertyOptional({ example: 'Nam' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  gender?: string;
+
+  @ApiPropertyOptional({ example: '1999-02-07' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  dateOfBirth?: string;
+
+  @ApiPropertyOptional({ example: 'Việt Nam' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  nationality?: string;
+
+  @ApiPropertyOptional({ example: 'Quận Cầu Giấy, Hà Nội' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  address?: string;
+
+  @ApiPropertyOptional({ example: 'https://github.com/username' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  website?: string;
+
   @ApiPropertyOptional({ example: 'Lập trình viên Backend NestJS với 2 năm kinh nghiệm...' })
   @IsOptional()
   @IsString()

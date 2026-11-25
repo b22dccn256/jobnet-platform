@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button, Card, Form, Input, Modal, Select, Space, Table, Tag, message } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AdminNav from '@/components/admin/AdminNav';
@@ -8,6 +9,13 @@ import { getErrorMessage } from '@/lib/error';
 import { formatSalary } from '@/lib/format';
 import { adminService } from '@/services/admin.service';
 import type { Job, JobStatus } from '@/types';
+
+const STATUS_MAP: Record<JobStatus, { label: string; color: string }> = {
+  pending: { label: 'Chờ kiểm duyệt', color: 'warning' },
+  approved: { label: 'Đang hiển thị', color: 'success' },
+  rejected: { label: 'Đã từ chối', color: 'error' },
+  closed: { label: 'Đã đóng', color: 'default' },
+};
 
 export default function AdminJobsModerationPage() {
   const queryClient = useQueryClient();
@@ -35,57 +43,62 @@ export default function AdminJobsModerationPage() {
     <div className="container section">
       <AdminNav />
 
-      <Card
-        title="Kiểm duyệt tin tuyển dụng doanh nghiệp"
-        extra={
-          <Select<JobStatus>
-            allowClear
-            placeholder="Tất cả trạng thái"
-            style={{ width: 180 }}
-            value={statusFilter}
-            onChange={(v) => setStatusFilter(v)}
-            options={[
-              { value: 'pending', label: 'Chờ duyệt' },
-              { value: 'approved', label: 'Đã duyệt' },
-              { value: 'rejected', label: 'Đã từ chối' },
-              { value: 'closed', label: 'Đã đóng' },
-            ]}
-          />
-        }
-        style={{ borderRadius: 14 }}
-      >
+      <div className="section__head">
+        <div>
+          <h1 className="section__title">Kiểm duyệt tin tuyển dụng</h1>
+          <p className="section__subtitle">
+            Đảm bảo tính minh bạch của tin đăng trước khi đồng bộ lên chỉ mục tìm kiếm
+          </p>
+        </div>
+        <Select<JobStatus>
+          allowClear
+          placeholder="Tất cả trạng thái"
+          style={{ width: 200 }}
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v)}
+          options={[
+            { value: 'pending', label: 'Chờ kiểm duyệt' },
+            { value: 'approved', label: 'Đang hiển thị' },
+            { value: 'rejected', label: 'Đã từ chối' },
+            { value: 'closed', label: 'Đã đóng' },
+          ]}
+        />
+      </div>
+
+      <Card style={{ borderRadius: 14 }}>
         <Table<Job>
           rowKey="_id"
           loading={isLoading}
           dataSource={data?.items || []}
           scroll={{ x: 760 }}
           columns={[
-            { title: 'Tiêu đề tin', dataIndex: 'title' },
+            {
+              title: 'Tiêu đề tin',
+              dataIndex: 'title',
+              render: (val, r) => (
+                <Link href={`/jobs/${r._id}`} style={{ fontWeight: 600 }}>
+                  {val}
+                </Link>
+              ),
+            },
             {
               title: 'Doanh nghiệp',
               render: (_, r) => (typeof r.company === 'object' && r.company ? r.company.name : '–'),
             },
             {
               title: 'Mức lương',
-              render: (_, r) => formatSalary(r.salaryMin, r.salaryMax),
+              render: (_, r) => (
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {formatSalary(r.salaryMin, r.salaryMax)}
+                </span>
+              ),
             },
             {
               title: 'Trạng thái',
-              render: (_, r) => (
-                <Tag
-                  color={
-                    r.status === 'approved'
-                      ? 'green'
-                      : r.status === 'pending'
-                        ? 'gold'
-                        : r.status === 'rejected'
-                          ? 'red'
-                          : 'default'
-                  }
-                >
-                  {r.status}
-                </Tag>
-              ),
+              render: (_, r) => {
+                const st = STATUS_MAP[r.status] || { label: r.status, color: 'default' };
+                return <Tag color={st.color}>{st.label}</Tag>;
+              },
             },
             {
               title: 'Xét duyệt',
@@ -130,7 +143,10 @@ export default function AdminJobsModerationPage() {
             label="Lý do từ chối (hiển thị cho nhà tuyển dụng)"
             rules={[{ required: true, message: 'Vui lòng nhập lý do từ chối' }]}
           >
-            <Input.TextArea rows={3} placeholder="Thông tin mức lương hoặc mô tả công việc chưa minh bạch..." />
+            <Input.TextArea
+              rows={3}
+              placeholder="Thông tin mức lương hoặc mô tả công việc chưa minh bạch..."
+            />
           </Form.Item>
           <Button danger type="primary" htmlType="submit" loading={moderateMutation.isPending} block>
             Xác nhận từ chối

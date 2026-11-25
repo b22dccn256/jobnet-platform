@@ -10,6 +10,15 @@ export class OtherInfo {
 
   @Prop()
   content: string;
+
+  @Prop()
+  religion?: string;
+
+  @Prop()
+  hometown?: string;
+
+  @Prop()
+  emergencyContact?: string;
 }
 
 export const OtherInfoSchema = SchemaFactory.createForClass(OtherInfo);

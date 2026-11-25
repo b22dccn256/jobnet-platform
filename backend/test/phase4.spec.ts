@@ -2,6 +2,8 @@ import * as assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { ConflictException } from '@nestjs/common';
 import { of, throwError } from 'rxjs';
+import { ROLES_KEY } from '../src/common/decorators/roles.decorator';
+import { ChatbotController } from '../src/modules/chatbot/chatbot.controller';
 import { ChatbotService } from '../src/modules/chatbot/chatbot.service';
 import { MarketInsightService } from '../src/modules/market-insights/market-insights.service';
 import { ScrapedJobService } from '../src/modules/scraped-jobs/scraped-jobs.service';
@@ -57,6 +59,9 @@ describe('Phase 4 Chatbot, ScrapedJobs & MarketInsights', () => {
     const fallbackRes = await fallbackService.chat('Tìm việc NestJS');
     assert.equal(fallbackRes.mode, 'backend-fallback');
     assert.equal(fallbackRes.jobs.length, 1);
+
+    const controllerRoles = Reflect.getMetadata(ROLES_KEY, ChatbotController);
+    assert.equal(controllerRoles, undefined);
   });
 
   it('ScrapedJobService prevents duplicate sourceUrl', async () => {

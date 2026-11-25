@@ -4,6 +4,7 @@ dist/
 dist-test/
 uploads/
 .next/
+.next-dev/
 coverage/
 *.log
 # Python

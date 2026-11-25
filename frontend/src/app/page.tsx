@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Empty, Input, Select, Skeleton } from 'antd';
 import {
+  AppstoreOutlined,
   ArrowRightOutlined,
   BarChartOutlined,
   EnvironmentOutlined,
@@ -17,7 +18,7 @@ import { useQuery } from '@tanstack/react-query';
 import JobCardItem from '@/components/common/JobCardItem';
 import { jobsService } from '@/services/jobs.service';
 
-const HOT_KEYWORDS = ['TypeScript', 'NestJS', 'React', 'Next.js', 'Python', 'Marketing'];
+const HOT_KEYWORDS = ['TypeScript', 'NestJS', 'React', 'Next.js', 'Python', 'UI/UX'];
 
 export default function HomePage() {
   const router = useRouter();
@@ -48,10 +49,10 @@ export default function HomePage() {
           <span className="hero__badge">
             <ThunderboltOutlined /> Nền tảng kết nối việc làm thông minh
           </span>
-          <h1 className="hero__title">Khám phá cơ hội nghề nghiệp phù hợp nhất với bạn</h1>
+          <h1 className="hero__title">Tìm đúng cơ hội nghề nghiệp bằng dữ liệu & AI thực chiến</h1>
           <p className="hero__subtitle">
-            Giải pháp tuyển dụng tinh gọn cho doanh nghiệp SME, thị trường ngách và ứng viên tự do —
-            tích hợp tìm kiếm Elasticsearch, trợ lý AI và thống kê thị trường.
+            Giải pháp tuyển dụng tinh gọn dành cho doanh nghiệp SME và ứng viên công nghệ — tích hợp
+            chỉ mục Elasticsearch, chấm điểm hồ sơ 105 điểm và thống kê thị trường trực tiếp.
           </p>
 
           <div className="search-box">
@@ -89,15 +90,14 @@ export default function HomePage() {
                 size="large"
                 icon={<SearchOutlined />}
                 onClick={handleSearch}
-                style={{ background: '#10b981', borderColor: '#10b981' }}
               >
-                Tìm việc
+                Tìm việc ngay
               </Button>
             </div>
           </div>
 
           <div className="hero__keywords">
-            <span>Từ khóa nổi bật:</span>
+            <span>Tìm nhanh:</span>
             {HOT_KEYWORDS.map((kw) => (
               <button
                 key={kw}
@@ -109,6 +109,23 @@ export default function HomePage() {
               </button>
             ))}
           </div>
+
+          <div className="hero__metrics">
+            <div className="hero__metric">
+              <strong>{jobsData?.total ?? '10+'}</strong>
+              <span>Vị trí đã kiểm duyệt</span>
+            </div>
+            <div className="hero__metric-sep" aria-hidden />
+            <div className="hero__metric">
+              <strong>105đ</strong>
+              <span>Thang chấm độ phù hợp</span>
+            </div>
+            <div className="hero__metric-sep" aria-hidden />
+            <div className="hero__metric">
+              <strong>LLaMA 3.3</strong>
+              <span>Trợ lý hội thoại tiếng Việt</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -119,23 +136,23 @@ export default function HomePage() {
               <RobotOutlined />
             </div>
             <div>
-              <h2 className="feature-card__title">Chatbot AI LLaMA 3.3</h2>
+              <h2 className="feature-card__title">Trợ lý AI LLaMA 3.3</h2>
               <p className="feature-card__desc">
-                Tìm việc bằng ngôn ngữ tự nhiên với Groq API tốc độ cao kết hợp dữ liệu thực tế.
+                Tra cứu việc làm bằng câu tự nhiên qua Groq API tốc độ cao, đối chiếu trực tiếp dữ liệu thật.
               </p>
             </div>
           </article>
           <article
             className="feature-card"
-            style={{ '--accent': '#10b981', '--accent-soft': '#ecfdf5' } as React.CSSProperties}
+            style={{ '--accent': '#059669', '--accent-soft': '#ecfdf5' } as React.CSSProperties}
           >
             <div className="feature-card__icon">
               <SafetyCertificateOutlined />
             </div>
             <div>
-              <h2 className="feature-card__title">Kiểm duyệt & Gợi ý 105 điểm</h2>
+              <h2 className="feature-card__title">Kiểm duyệt & Chấm điểm 105đ</h2>
               <p className="feature-card__desc">
-                Tin đăng được Admin kiểm duyệt; xếp hạng độ phù hợp minh bạch theo 9 tiêu chí.
+                Tin tuyển dụng qua bước duyệt của Admin; xếp hạng hồ sơ minh bạch trên 9 tiêu chí.
               </p>
             </div>
           </article>
@@ -147,9 +164,9 @@ export default function HomePage() {
               <BarChartOutlined />
             </div>
             <div>
-              <h2 className="feature-card__title">Phân tích thị trường việc làm</h2>
+              <h2 className="feature-card__title">Bức tranh lương thị trường</h2>
               <p className="feature-card__desc">
-                Theo dõi lương trung bình, trung vị theo ngành, kỹ năng hot và xu hướng tuyển dụng.
+                So sánh khoảng lương trung bình, trung vị theo ngành, kỹ năng dẫn đầu và nhu cầu tuyển dụng.
               </p>
             </div>
           </article>
@@ -161,16 +178,22 @@ export default function HomePage() {
           <div className="container">
             <div className="section__head">
               <div>
-                <h2 className="section__title">Ngành nghề nổi bật</h2>
-                <p className="section__subtitle">Khám phá việc làm theo nhóm lĩnh vực chuyên môn</p>
+                <h2 className="section__title">Ngành nghề trọng điểm</h2>
+                <p className="section__subtitle">Lọc nhanh cơ hội theo nhóm chuyên môn</p>
               </div>
               <Link href="/jobs" className="section__link">
-                Xem tất cả <ArrowRightOutlined />
+                Xem tất cả ngành <ArrowRightOutlined />
               </Link>
             </div>
             <div className="category-grid">
               {categoriesData.items.slice(0, 8).map((cat) => (
                 <Link key={cat._id} href={`/jobs?category=${cat._id}`} className="category-card">
+                  <div className="category-card__top">
+                    <span className="category-card__badge">
+                      <AppstoreOutlined />
+                    </span>
+                    <ArrowRightOutlined className="category-card__arrow" />
+                  </div>
                   <h3 className="category-card__name">{cat.name}</h3>
                   <p className="category-card__desc">{cat.description || 'Khám phá việc làm mới'}</p>
                 </Link>
@@ -184,8 +207,8 @@ export default function HomePage() {
         <div className="container">
           <div className="section__head">
             <div>
-              <h2 className="section__title">Việc làm mới nhất</h2>
-              <p className="section__subtitle">Các tin tuyển dụng vừa được ban quản trị phê duyệt</p>
+              <h2 className="section__title">Việc làm mới phê duyệt</h2>
+              <p className="section__subtitle">Cập nhật liên tục từ các doanh nghiệp đang tuyển dụng</p>
             </div>
             <Link href="/jobs" className="section__link">
               Tất cả việc làm <ArrowRightOutlined />
@@ -214,21 +237,23 @@ export default function HomePage() {
 
       <section className="section section--muted">
         <div className="container">
-          <div className="cta">
-            <h2 className="cta__title">Bạn là Nhà Tuyển Dụng SME?</h2>
-            <p className="cta__desc">
-              Đăng tin nhanh gọn, quản lý hồ sơ ứng viên tập trung và sử dụng thuật toán chấm điểm
-              gợi ý ứng viên phù hợp với chi phí tối ưu.
-            </p>
+          <div className="cta-banner">
+            <div className="cta-banner__copy">
+              <h2 className="cta__title">Dành cho Doanh nghiệp SME đang mở rộng đội ngũ</h2>
+              <p className="cta__desc" style={{ marginBottom: 0 }}>
+                Đăng tin trong 2 phút, quản lý phễu ứng viên tập trung và mở khóa gợi ý ứng viên tự động
+                theo thang 105 điểm qua cổng thanh toán VNPay.
+              </p>
+            </div>
             <div className="cta__actions">
               <Link href="/register?role=employer">
                 <Button type="primary" size="large">
-                  Đăng ký Nhà tuyển dụng
+                  Tạo tài khoản Nhà tuyển dụng
                 </Button>
               </Link>
-              <Link href="/chatbot">
-                <Button size="large" icon={<RobotOutlined />}>
-                  Thử trợ lý AI tìm việc
+              <Link href="/market-insights">
+                <Button size="large" icon={<BarChartOutlined />}>
+                  Xem báo cáo thị trường
                 </Button>
               </Link>
             </div>

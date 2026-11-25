@@ -60,12 +60,32 @@ export default function AppHeader() {
   const dispatch = useDispatch();
   const { user, accessToken, hydrated } = useSelector((state: RootState) => state.auth);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
 
-  const isLoggedIn = Boolean(accessToken && user);
+  // Gently warm primary navigation routes during browser idle so tab switches stay crisp.
+  useEffect(() => {
+    const timers: number[] = [];
+    const routes = NAV_ITEMS.map((i) => i.href).filter((href) => href !== pathname);
+    routes.forEach((href, index) => {
+      const id = window.setTimeout(() => {
+        router.prefetch(href);
+      }, 600 + index * 450);
+      timers.push(id);
+    });
+    return () => {
+      timers.forEach((id) => window.clearTimeout(id));
+    };
+  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isLoggedIn = Boolean(mounted && hydrated && accessToken && user);
   const displayName = user?.fullName || user?.email || '';
   const initial = (displayName || 'U').charAt(0).toUpperCase();
 
@@ -103,6 +123,7 @@ export default function AppHeader() {
             <Link
               key={item.href}
               href={item.href}
+              onMouseEnter={() => router.prefetch(item.href)}
               className={`site-nav__link${isActivePath(pathname, item.href) ? ' is-active' : ''}`}
             >
               {item.icon}
@@ -112,7 +133,7 @@ export default function AppHeader() {
         </nav>
 
         <div className="site-header__actions">
-          {!hydrated ? (
+          {!mounted || !hydrated ? (
             <span className="site-header__placeholder" aria-hidden />
           ) : isLoggedIn && user ? (
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
