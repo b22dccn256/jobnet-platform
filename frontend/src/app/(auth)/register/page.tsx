@@ -1,124 +1,143 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Radio, message, Divider } from 'antd';
-import { MailOutlined, LockOutlined, UserOutlined, PhoneOutlined } from '@ant-design/icons';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Button, Divider, Form, Input, message } from 'antd';
+import {
+  BankOutlined,
+  LockOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
+import AuthShell from '@/components/common/AuthShell';
+import { getErrorMessage } from '@/lib/error';
+import { HOME_BY_ROLE } from '@/lib/format';
+import { authService, type RegisterPayload } from '@/services/auth.service';
 import { setSession } from '@/store/authSlice';
-import { authService, RegisterPayload } from '@/services/auth.service';
 
-const { Title, Text } = Typography;
-
-export default function RegisterPage() {
+function RegisterFormContent() {
+  const searchParams = useSearchParams();
+  const initialRole = searchParams.get('role') === 'employer' ? 'employer' : 'candidate';
+  const [role, setRole] = useState<'candidate' | 'employer'>(initialRole);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const dispatch = useDispatch();
 
-  const onFinish = async (values: RegisterPayload) => {
+  const onFinish = async (values: Omit<RegisterPayload, 'role'>) => {
     try {
       setLoading(true);
-      const res = await authService.register(values);
-      const data = res.data;
+      const res = await authService.register({ ...values, role });
+      const data = res.data as {
+        id: string;
+        email: string;
+        fullName?: string;
+        role: 'candidate' | 'employer';
+        accessToken?: string;
+      };
       if (data.accessToken) {
-        dispatch(setSession(data));
+        dispatch(
+          setSession({
+            accessToken: data.accessToken,
+            user: { id: data.id, email: data.email, fullName: data.fullName, role: data.role },
+          }),
+        );
       }
       message.success('Đăng ký tài khoản thành công!');
-
-      if (values.role === 'employer') {
-        router.push('/employer/dashboard');
-      } else {
-        router.push('/jobs');
-      }
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.message || 'Đăng ký thất bại, email có thể đã tồn tại';
-      message.error(errorMsg);
+      router.push(HOME_BY_ROLE[role]);
+    } catch (err) {
+      message.error(getErrorMessage(err, 'Đăng ký thất bại, email có thể đã tồn tại'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 180px)', padding: 24 }}>
-      <Card style={{ width: 480, boxShadow: '0 4px 12px rgba(0,0,0,0.06)', borderRadius: 12 }}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title level={3} style={{ marginBottom: 8, color: '#1e293b' }}>Tạo tài khoản mới</Title>
-          <Text type="secondary">Gia nhập JobNet để tìm việc hoặc tiếp cận hàng ngàn ứng viên</Text>
-        </div>
+    <>
+      <div className="auth-card__head">
+        <h2 className="auth-card__title">Tạo tài khoản mới</h2>
+        <p className="auth-card__subtitle">Chọn vai trò phù hợp để bắt đầu cùng JobNet</p>
+      </div>
 
-        <Form
-          layout="vertical"
-          onFinish={onFinish}
-          requiredMark={false}
-          size="large"
-          initialValues={{ role: 'candidate' }}
+      <div className="role-selector" style={{ marginBottom: 20 }}>
+        <button
+          type="button"
+          className={`role-option${role === 'candidate' ? ' is-active' : ''}`}
+          onClick={() => setRole('candidate')}
         >
-          <Form.Item name="role" label="Bạn tham gia với tư cách:">
-            <Radio.Group style={{ width: '100%', display: 'flex' }} buttonStyle="solid">
-              <Radio.Button value="candidate" style={{ flex: 1, textAlign: 'center' }}>
-                Người tìm việc (Ứng viên)
-              </Radio.Button>
-              <Radio.Button value="employer" style={{ flex: 1, textAlign: 'center' }}>
-                Nhà tuyển dụng (Doanh nghiệp)
-              </Radio.Button>
-            </Radio.Group>
-          </Form.Item>
+          <UserOutlined className="role-option__icon" />
+          <span className="role-option__title">Ứng viên</span>
+          <span className="role-option__desc">Tạo CV, tìm việc & chat AI</span>
+        </button>
+        <button
+          type="button"
+          className={`role-option${role === 'employer' ? ' is-active' : ''}`}
+          onClick={() => setRole('employer')}
+        >
+          <BankOutlined className="role-option__icon" />
+          <span className="role-option__title">Nhà tuyển dụng</span>
+          <span className="role-option__desc">Đăng tin & gợi ý ứng viên</span>
+        </button>
+      </div>
 
+      <Form layout="vertical" onFinish={onFinish} requiredMark={false} size="large">
+        <div className="form-grid-2">
           <Form.Item
             name="fullName"
             label="Họ và tên"
-            rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
+            rules={[{ required: true, message: 'Nhập họ tên' }]}
           >
             <Input prefix={<UserOutlined style={{ color: '#94a3b8' }} />} placeholder="Nguyễn Văn A" />
           </Form.Item>
-
-          <Form.Item
-            name="email"
-            label="Địa chỉ Email"
-            rules={[
-              { required: true, message: 'Vui lòng nhập email!' },
-              { type: 'email', message: 'Email không đúng định dạng!' },
-            ]}
-          >
-            <Input prefix={<MailOutlined style={{ color: '#94a3b8' }} />} placeholder="name@example.com" />
-          </Form.Item>
-
-          <Form.Item
-            name="phone"
-            label="Số điện thoại"
-            rules={[{ required: false }]}
-          >
+          <Form.Item name="phone" label="Số điện thoại">
             <Input prefix={<PhoneOutlined style={{ color: '#94a3b8' }} />} placeholder="0912345678" />
           </Form.Item>
-
-          <Form.Item
-            name="password"
-            label="Mật khẩu"
-            rules={[
-              { required: true, message: 'Vui lòng nhập mật khẩu!' },
-              { min: 6, message: 'Mật khẩu phải từ 6 ký tự trở lên!' },
-            ]}
-          >
-            <Input.Password prefix={<LockOutlined style={{ color: '#94a3b8' }} />} placeholder="Ít nhất 6 ký tự" />
-          </Form.Item>
-
-          <Form.Item style={{ marginTop: 24 }}>
-            <Button type="primary" htmlType="submit" loading={loading} block style={{ height: 44 }}>
-              Đăng ký tài khoản
-            </Button>
-          </Form.Item>
-        </Form>
-
-        <Divider style={{ margin: '16px 0', fontSize: 13, color: '#94a3b8' }}>hoặc</Divider>
-
-        <div style={{ textAlign: 'center' }}>
-          <Text type="secondary">Đã có tài khoản? </Text>
-          <Link href="/login" style={{ fontWeight: 600, color: '#2563eb' }}>
-            Đăng nhập
-          </Link>
         </div>
-      </Card>
-    </div>
+
+        <Form.Item
+          name="email"
+          label="Email"
+          rules={[
+            { required: true, message: 'Nhập email' },
+            { type: 'email', message: 'Email không hợp lệ' },
+          ]}
+        >
+          <Input prefix={<MailOutlined style={{ color: '#94a3b8' }} />} placeholder="name@example.com" />
+        </Form.Item>
+
+        <Form.Item
+          name="password"
+          label="Mật khẩu"
+          rules={[
+            { required: true, message: 'Nhập mật khẩu' },
+            { min: 6, message: 'Tối thiểu 6 ký tự' },
+          ]}
+        >
+          <Input.Password prefix={<LockOutlined style={{ color: '#94a3b8' }} />} placeholder="Tối thiểu 6 ký tự" />
+        </Form.Item>
+
+        <Button type="primary" htmlType="submit" loading={loading} block size="large">
+          Đăng ký tài khoản
+        </Button>
+      </Form>
+
+      <Divider plain>hoặc</Divider>
+
+      <p className="auth-card__footer">
+        Đã có tài khoản? <Link href="/login">Đăng nhập</Link>
+      </p>
+    </>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <AuthShell>
+      <Suspense fallback={<div>Đang tải...</div>}>
+        <RegisterFormContent />
+      </Suspense>
+    </AuthShell>
   );
 }

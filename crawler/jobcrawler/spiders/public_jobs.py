@@ -2,13 +2,16 @@ import json
 import os
 import re
 from datetime import datetime, timezone
+from pathlib import Path
 
 import scrapy
 from dotenv import load_dotenv
 
 from ..items import ScrapedJobItem
 
-load_dotenv()
+_CRAWLER_DIR = Path(__file__).resolve().parents[2]
+load_dotenv(_CRAWLER_DIR.parent / ".env")
+load_dotenv(_CRAWLER_DIR / ".env", override=True)
 
 USD_TO_VND = 25_000
 

@@ -1,13 +1,13 @@
-# Mặc định chỉ chạy hạ tầng: docker compose up -d
-# Chạy cả backend + chatbot trong Docker: docker compose --profile app up -d --build
+# Mặc định chỉ chạy hạ tầng: docker compose --env-file ../.env up -d
+# Chạy cả backend + chatbot trong Docker: docker compose --env-file ../.env --profile app up -d --build
 services:
   mongo:
     image: mongo:7
     container_name: jobnet-mongo
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-change_me}
     ports:
       - "27017:27017"
     volumes:
@@ -43,8 +43,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change_me_too}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -55,9 +55,9 @@ services:
     profiles: ["app"]
     build: ../backend
     container_name: jobnet-backend
-    env_file: ../backend/.env
+    env_file: ../.env
     environment:
-      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/jobnet?authSource=admin
+      MONGO_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-change_me}@mongo:27017/jobnet?authSource=admin
       ELASTICSEARCH_NODE: http://elasticsearch:9200
       MINIO_ENDPOINT: minio
       CHATBOT_URL: http://chatbot:8000
@@ -72,9 +72,9 @@ services:
     profiles: ["app"]
     build: ../chatbot
     container_name: jobnet-chatbot
-    env_file: ../chatbot/.env
+    env_file: ../.env
     environment:
-      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/jobnet?authSource=admin
+      MONGO_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-change_me}@mongo:27017/jobnet?authSource=admin
     ports:
       - "8000:8000"
     depends_on:

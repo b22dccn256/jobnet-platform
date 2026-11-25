@@ -100,7 +100,16 @@ describe('Phase 4 Chatbot, ScrapedJobs & MarketInsights', () => {
         const first = JSON.stringify(pipeline);
         if (first.includes('$unwind')) return [{ _id: 'TypeScript', count: 2 }];
         if (first.includes('$dateToString')) return [{ _id: '2026-11-23', count: 2 }];
-        return [{ _id: 'IT', avgMin: 15000000, avgMax: 25000000, count: 2 }];
+        return [
+          {
+            _id: 'IT',
+            avgMin: 15000000,
+            avgMax: 25000000,
+            minValues: [10000000, 14000000, 21000000],
+            maxValues: [20000000, 24000000, 31000000],
+            count: 3,
+          },
+        ];
       },
     };
     const jobModel = { countDocuments: async () => 0, aggregate: async () => [] };
@@ -114,6 +123,8 @@ describe('Phase 4 Chatbot, ScrapedJobs & MarketInsights', () => {
     const overview = await service.getOverview();
     assert.equal(overview.source, 'scraped_jobs');
     assert.equal(overview.salaryByCategory.length, 1);
+    assert.equal(overview.salaryByCategory[0].medianMin, 14000000);
+    assert.equal(overview.salaryByCategory[0].medianMax, 24000000);
     assert.equal(overview.hotSkills[0]._id, 'TypeScript');
 
     const recalc = await service.recalculate();

@@ -39,6 +39,7 @@ const NAV_ITEMS: NavItem[] = [
 const ROLE_LINKS: Record<UserRole, NavItem[]> = {
   candidate: [
     { href: '/cv', label: 'Hồ sơ CV của tôi', icon: <FileTextOutlined /> },
+    { href: '/recommended', label: 'Việc làm gợi ý', icon: <SearchOutlined /> },
     { href: '/applied', label: 'Việc đã ứng tuyển', icon: <CheckCircleOutlined /> },
     { href: '/saved', label: 'Việc đã lưu', icon: <HeartOutlined /> },
   ],

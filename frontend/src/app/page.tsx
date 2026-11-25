@@ -1,24 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Typography, Input, Button, Card, Row, Col, Tag, Space, Select, Spin, Empty } from 'antd';
-import {
-  SearchOutlined,
-  EnvironmentOutlined,
-  DollarCircleOutlined,
-  ThunderboltOutlined,
-  RobotOutlined,
-  SafetyCertificateOutlined,
-  BarChartOutlined,
-  ArrowRightOutlined,
-} from '@ant-design/icons';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Button, Empty, Input, Select, Skeleton } from 'antd';
+import {
+  ArrowRightOutlined,
+  BarChartOutlined,
+  EnvironmentOutlined,
+  RobotOutlined,
+  SafetyCertificateOutlined,
+  SearchOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
+import JobCardItem from '@/components/common/JobCardItem';
 import { jobsService } from '@/services/jobs.service';
-import type { Job } from '@/types';
 
-const { Title, Text, Paragraph } = Typography;
+const HOT_KEYWORDS = ['TypeScript', 'NestJS', 'React', 'Next.js', 'Python', 'Marketing'];
 
 export default function HomePage() {
   const router = useRouter();
@@ -42,324 +41,200 @@ export default function HomePage() {
     router.push(`/jobs?${params.toString()}`);
   };
 
-  const formatSalary = (min?: number, max?: number) => {
-    if (!min && !max) return 'Thoả thuận';
-    if (min && max) return `${(min / 1000000).toFixed(0)} - ${(max / 1000000).toFixed(0)} triệu`;
-    if (min) return `Từ ${(min / 1000000).toFixed(0)} triệu`;
-    return `Đến ${(max! / 1000000).toFixed(0)} triệu`;
-  };
-
   return (
-    <div>
-      {/* 1. Hero Search Banner */}
-      <section
-        style={{
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%)',
-          padding: '72px 24px 84px',
-          color: '#fff',
-          textAlign: 'center',
-        }}
-      >
-        <div style={{ maxWidth: 960, margin: '0 auto' }}>
-          <Tag color="cyan" style={{ fontSize: 13, padding: '4px 12px', borderRadius: 20, marginBottom: 16 }}>
-            <ThunderboltOutlined /> Nền tảng kết nối việc làm thông minh 2026
-          </Tag>
-          <Title level={1} style={{ color: '#fff', fontSize: 44, fontWeight: 800, marginBottom: 16 }}>
-            Khám phá cơ hội nghề nghiệp phù hợp nhất với bạn
-          </Title>
-          <Paragraph style={{ color: '#e0e7ff', fontSize: 18, marginBottom: 36, maxWidth: 680, margin: '0 auto 36px' }}>
-            Kết nối trực tiếp giữa doanh nghiệp SME và người tìm việc. Tích hợp AI thông minh và dữ liệu phân tích thị trường trực quan.
-          </Paragraph>
+    <>
+      <section className="hero">
+        <div className="container hero__inner">
+          <span className="hero__badge">
+            <ThunderboltOutlined /> Nền tảng kết nối việc làm thông minh
+          </span>
+          <h1 className="hero__title">Khám phá cơ hội nghề nghiệp phù hợp nhất với bạn</h1>
+          <p className="hero__subtitle">
+            Giải pháp tuyển dụng tinh gọn cho doanh nghiệp SME, thị trường ngách và ứng viên tự do —
+            tích hợp tìm kiếm Elasticsearch, trợ lý AI và thống kê thị trường.
+          </p>
 
-          {/* Search Box */}
-          <Card
-            style={{
-              borderRadius: 16,
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)',
-              padding: 6,
-            }}
-          >
-            <Row gutter={[12, 12]} align="middle">
-              <Col xs={24} md={12}>
-                <Input
-                  size="large"
-                  placeholder="Vị trí tuyển dụng, kỹ năng (ví dụ: NestJS, React, Marketing)..."
-                  prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onPressEnter={handleSearch}
-                  variant="borderless"
-                  style={{ fontSize: 15 }}
-                />
-              </Col>
-              <Col xs={24} md={7}>
-                <Select
-                  size="large"
-                  placeholder="Tất cả địa điểm"
-                  variant="borderless"
-                  style={{ width: '100%', textAlign: 'left' }}
-                  allowClear
-                  value={selectedLocation}
-                  onChange={(val) => setSelectedLocation(val)}
-                  suffixIcon={<EnvironmentOutlined style={{ color: '#94a3b8' }} />}
-                  options={[
-                    { value: 'Hà Nội', label: 'Hà Nội' },
-                    { value: 'Hồ Chí Minh', label: 'TP. Hồ Chí Minh' },
-                    { value: 'Đà Nẵng', label: 'Đà Nẵng' },
-                    { value: 'Remote', label: 'Làm việc từ xa (Remote)' },
-                  ]}
-                />
-              </Col>
-              <Col xs={24} md={5}>
-                <Button
-                  type="primary"
-                  size="large"
-                  block
-                  onClick={handleSearch}
-                  icon={<SearchOutlined />}
-                  style={{
-                    height: 48,
-                    borderRadius: 10,
-                    fontWeight: 600,
-                    fontSize: 16,
-                    background: '#10b981',
-                    borderColor: '#10b981',
-                  }}
-                >
-                  Tìm việc
-                </Button>
-              </Col>
-            </Row>
-          </Card>
+          <div className="search-box">
+            <div className="search-box__field">
+              <Input
+                size="large"
+                variant="borderless"
+                placeholder="Vị trí, kỹ năng (NestJS, React, Python...)"
+                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onPressEnter={handleSearch}
+              />
+            </div>
+            <div className="search-box__field">
+              <Select
+                size="large"
+                variant="borderless"
+                placeholder="Tất cả địa điểm"
+                allowClear
+                value={selectedLocation}
+                onChange={(val) => setSelectedLocation(val)}
+                suffixIcon={<EnvironmentOutlined style={{ color: '#94a3b8' }} />}
+                options={[
+                  { value: 'Hà Nội', label: 'Hà Nội' },
+                  { value: 'Hồ Chí Minh', label: 'TP. Hồ Chí Minh' },
+                  { value: 'Đà Nẵng', label: 'Đà Nẵng' },
+                  { value: 'Remote', label: 'Làm việc từ xa' },
+                ]}
+              />
+            </div>
+            <div className="search-box__submit">
+              <Button
+                type="primary"
+                size="large"
+                icon={<SearchOutlined />}
+                onClick={handleSearch}
+                style={{ background: '#10b981', borderColor: '#10b981' }}
+              >
+                Tìm việc
+              </Button>
+            </div>
+          </div>
 
-          {/* Hot Keywords */}
-          <div style={{ marginTop: 20, textAlign: 'center' }}>
-            <Text style={{ color: '#cbd5e1', fontSize: 13 }}>Từ khóa nổi bật: </Text>
-            {['TypeScript', 'NestJS', 'React', 'Java', 'Python', 'Marketing'].map((kw) => (
-              <Tag
+          <div className="hero__keywords">
+            <span>Từ khóa nổi bật:</span>
+            {HOT_KEYWORDS.map((kw) => (
+              <button
                 key={kw}
-                style={{ cursor: 'pointer', background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', margin: '2px 4px' }}
-                onClick={() => {
-                  setSearchTerm(kw);
-                  router.push(`/jobs?q=${kw}`);
-                }}
+                type="button"
+                className="keyword-chip"
+                onClick={() => router.push(`/jobs?q=${encodeURIComponent(kw)}`)}
               >
                 {kw}
-              </Tag>
+              </button>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 2. Feature Highlights */}
-      <section style={{ maxWidth: 1200, margin: '-32px auto 48px', padding: '0 24px', position: 'relative', zIndex: 10 }}>
-        <Row gutter={[20, 20]}>
-          <Col xs={24} md={8}>
-            <Card hoverable style={{ borderRadius: 12, borderTop: '4px solid #2563eb' }}>
-              <Space align="start" size="middle">
-                <div style={{ background: '#dbeafe', padding: 12, borderRadius: 10, color: '#2563eb', fontSize: 24 }}>
-                  <RobotOutlined />
-                </div>
-                <div>
-                  <Title level={5} style={{ margin: 0 }}>Chatbot AI hỗ trợ</Title>
-                  <Paragraph type="secondary" style={{ margin: '4px 0 0', fontSize: 13 }}>
-                    Trò chuyện tự nhiên với trợ lý Groq LLM để tìm kiếm việc làm đúng với mong đợi.
-                  </Paragraph>
-                </div>
-              </Space>
-            </Card>
-          </Col>
-          <Col xs={24} md={8}>
-            <Card hoverable style={{ borderRadius: 12, borderTop: '4px solid #10b981' }}>
-              <Space align="start" size="middle">
-                <div style={{ background: '#d1fae5', padding: 12, borderRadius: 10, color: '#10b981', fontSize: 24 }}>
-                  <SafetyCertificateOutlined />
-                </div>
-                <div>
-                  <Title level={5} style={{ margin: 0 }}>Tin tuyển dụng đã duyệt</Title>
-                  <Paragraph type="secondary" style={{ margin: '4px 0 0', fontSize: 13 }}>
-                    Mọi tin đăng từ nhà tuyển dụng đều được ban quản trị kiểm duyệt kỹ lưỡng để phòng tránh rủi ro.
-                  </Paragraph>
-                </div>
-              </Space>
-            </Card>
-          </Col>
-          <Col xs={24} md={8}>
-            <Card hoverable style={{ borderRadius: 12, borderTop: '4px solid #f59e0b' }}>
-              <Space align="start" size="middle">
-                <div style={{ background: '#fef3c7', padding: 12, borderRadius: 10, color: '#d97706', fontSize: 24 }}>
-                  <BarChartOutlined />
-                </div>
-                <div>
-                  <Title level={5} style={{ margin: 0 }}>Dữ liệu thị trường</Title>
-                  <Paragraph type="secondary" style={{ margin: '4px 0 0', fontSize: 13 }}>
-                    Tổng hợp tự động mức lương trung bình, kỹ năng hot và nhu cầu tuyển dụng từ crawler.
-                  </Paragraph>
-                </div>
-              </Space>
-            </Card>
-          </Col>
-        </Row>
+      <section className="features">
+        <div className="container features__grid">
+          <article className="feature-card">
+            <div className="feature-card__icon">
+              <RobotOutlined />
+            </div>
+            <div>
+              <h2 className="feature-card__title">Chatbot AI LLaMA 3.3</h2>
+              <p className="feature-card__desc">
+                Tìm việc bằng ngôn ngữ tự nhiên với Groq API tốc độ cao kết hợp dữ liệu thực tế.
+              </p>
+            </div>
+          </article>
+          <article
+            className="feature-card"
+            style={{ '--accent': '#10b981', '--accent-soft': '#ecfdf5' } as React.CSSProperties}
+          >
+            <div className="feature-card__icon">
+              <SafetyCertificateOutlined />
+            </div>
+            <div>
+              <h2 className="feature-card__title">Kiểm duyệt & Gợi ý 105 điểm</h2>
+              <p className="feature-card__desc">
+                Tin đăng được Admin kiểm duyệt; xếp hạng độ phù hợp minh bạch theo 9 tiêu chí.
+              </p>
+            </div>
+          </article>
+          <article
+            className="feature-card"
+            style={{ '--accent': '#d97706', '--accent-soft': '#fef3c7' } as React.CSSProperties}
+          >
+            <div className="feature-card__icon">
+              <BarChartOutlined />
+            </div>
+            <div>
+              <h2 className="feature-card__title">Phân tích thị trường việc làm</h2>
+              <p className="feature-card__desc">
+                Theo dõi lương trung bình, trung vị theo ngành, kỹ năng hot và xu hướng tuyển dụng.
+              </p>
+            </div>
+          </article>
+        </div>
       </section>
 
-      {/* 3. Categories Section */}
       {categoriesData?.items && categoriesData.items.length > 0 && (
-        <section style={{ maxWidth: 1200, margin: '0 auto 56px', padding: '0 24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
-            <div>
-              <Title level={3} style={{ margin: 0 }}>Ngành nghề nổi bật</Title>
-              <Text type="secondary">Tìm việc làm theo chuyên môn nghề nghiệp bạn quan tâm</Text>
+        <section className="section">
+          <div className="container">
+            <div className="section__head">
+              <div>
+                <h2 className="section__title">Ngành nghề nổi bật</h2>
+                <p className="section__subtitle">Khám phá việc làm theo nhóm lĩnh vực chuyên môn</p>
+              </div>
+              <Link href="/jobs" className="section__link">
+                Xem tất cả <ArrowRightOutlined />
+              </Link>
             </div>
-            <Link href="/jobs" style={{ fontWeight: 600, color: '#2563eb' }}>
-              Xem tất cả <ArrowRightOutlined />
-            </Link>
+            <div className="category-grid">
+              {categoriesData.items.slice(0, 8).map((cat) => (
+                <Link key={cat._id} href={`/jobs?category=${cat._id}`} className="category-card">
+                  <h3 className="category-card__name">{cat.name}</h3>
+                  <p className="category-card__desc">{cat.description || 'Khám phá việc làm mới'}</p>
+                </Link>
+              ))}
+            </div>
           </div>
-
-          <Row gutter={[16, 16]}>
-            {categoriesData.items.slice(0, 8).map((cat) => (
-              <Col xs={12} sm={8} md={6} key={cat._id}>
-                <Card
-                  hoverable
-                  style={{ borderRadius: 10, textAlign: 'center', height: '100%' }}
-                  onClick={() => router.push(`/jobs?category=${cat._id}`)}
-                >
-                  <Title level={5} style={{ margin: '8px 0 4px', fontSize: 15 }}>
-                    {cat.name}
-                  </Title>
-                  <Text type="secondary" style={{ fontSize: 12 }} ellipsis>
-                    {cat.description || 'Xem việc làm phù hợp'}
-                  </Text>
-                </Card>
-              </Col>
-            ))}
-          </Row>
         </section>
       )}
 
-      {/* 4. Latest Jobs Section */}
-      <section style={{ maxWidth: 1200, margin: '0 auto 64px', padding: '0 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 24 }}>
-          <div>
-            <Title level={3} style={{ margin: 0 }}>Việc làm mới nhất</Title>
-            <Text type="secondary">Các cơ hội việc làm hấp dẫn vừa được kiểm duyệt</Text>
-          </div>
-          <Link href="/jobs" style={{ fontWeight: 600, color: '#2563eb' }}>
-            Xem thêm cơ hội khác <ArrowRightOutlined />
-          </Link>
-        </div>
-
-        {jobsLoading ? (
-          <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <Spin size="large" />
-          </div>
-        ) : jobsData?.items && jobsData.items.length > 0 ? (
-          <Row gutter={[20, 20]}>
-            {jobsData.items.map((job: Job) => {
-              const companyName = typeof job.company === 'object' && job.company !== null ? job.company.name : 'Doanh nghiệp tuyển dụng';
-              const companyLogo = typeof job.company === 'object' && job.company !== null ? job.company.logo : null;
-
-              return (
-                <Col xs={24} md={12} key={job._id}>
-                  <Card
-                    hoverable
-                    style={{ borderRadius: 12, height: '100%', display: 'flex', flexDirection: 'column' }}
-                    onClick={() => router.push(`/jobs/${job._id}`)}
-                  >
-                    <div style={{ display: 'flex', gap: 16 }}>
-                      <div
-                        style={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: 8,
-                          background: '#f1f5f9',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 22,
-                          fontWeight: 700,
-                          color: '#2563eb',
-                          flexShrink: 0,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {companyLogo ? (
-                          <img src={companyLogo} alt={companyName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          companyName[0].toUpperCase()
-                        )}
-                      </div>
-
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <Title level={5} style={{ margin: 0, fontSize: 16 }} ellipsis>
-                          {job.title}
-                        </Title>
-                        <Text type="secondary" style={{ fontSize: 14 }} ellipsis>
-                          {companyName}
-                        </Text>
-
-                        <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                          <Tag color="green" icon={<DollarCircleOutlined />}>
-                            {formatSalary(job.salaryMin, job.salaryMax)}
-                          </Tag>
-                          {job.location && (
-                            <Tag icon={<EnvironmentOutlined />}>
-                              {job.location}
-                            </Tag>
-                          )}
-                          <Tag color="blue" style={{ textTransform: 'capitalize' }}>
-                            {job.workMode}
-                          </Tag>
-                        </div>
-
-                        {job.skills && job.skills.length > 0 && (
-                          <div style={{ marginTop: 8 }}>
-                            {job.skills.slice(0, 3).map((s) => (
-                              <Tag key={s} style={{ fontSize: 11, background: '#f8fafc', color: '#64748b' }}>
-                                {s}
-                              </Tag>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                </Col>
-              );
-            })}
-          </Row>
-        ) : (
-          <Empty description="Hiện tại chưa có tin việc làm nào. Hãy quay lại sau!" />
-        )}
-      </section>
-
-      {/* 5. CTA Employer Banner */}
-      <section
-        style={{
-          background: '#f1f5f9',
-          padding: '60px 24px',
-          borderTop: '1px solid #e2e8f0',
-          textAlign: 'center',
-        }}
-      >
-        <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <Title level={2} style={{ marginBottom: 12 }}>Bạn là Nhà Tuyển Dụng?</Title>
-          <Paragraph type="secondary" style={{ fontSize: 16, marginBottom: 24 }}>
-            Đăng tin tuyển dụng nhanh chóng, tiếp cận hàng ngàn ứng viên tiềm năng và nhận gợi ý thuật toán chấm điểm ứng viên phù hợp với chi phí tối ưu.
-          </Paragraph>
-          <Space size="middle">
-            <Link href="/register">
-              <Button type="primary" size="large" style={{ height: 44, padding: '0 28px', background: '#2563eb' }}>
-                Đăng ký tài khoản NTD
-              </Button>
+      <section className="section">
+        <div className="container">
+          <div className="section__head">
+            <div>
+              <h2 className="section__title">Việc làm mới nhất</h2>
+              <p className="section__subtitle">Các tin tuyển dụng vừa được ban quản trị phê duyệt</p>
+            </div>
+            <Link href="/jobs" className="section__link">
+              Tất cả việc làm <ArrowRightOutlined />
             </Link>
-            <Link href="/login">
-              <Button size="large" style={{ height: 44, padding: '0 28px' }}>
-                Đăng tin ngay
-              </Button>
-            </Link>
-          </Space>
+          </div>
+
+          {jobsLoading ? (
+            <div className="job-grid">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="job-card job-card--skeleton">
+                  <Skeleton active avatar paragraph={{ rows: 2 }} />
+                </div>
+              ))}
+            </div>
+          ) : jobsData?.items && jobsData.items.length > 0 ? (
+            <div className="job-grid">
+              {jobsData.items.map((job) => (
+                <JobCardItem key={job._id} job={job} />
+              ))}
+            </div>
+          ) : (
+            <Empty description="Chưa có tin tuyển dụng nào được đăng tải" />
+          )}
         </div>
       </section>
-    </div>
+
+      <section className="section section--muted">
+        <div className="container">
+          <div className="cta">
+            <h2 className="cta__title">Bạn là Nhà Tuyển Dụng SME?</h2>
+            <p className="cta__desc">
+              Đăng tin nhanh gọn, quản lý hồ sơ ứng viên tập trung và sử dụng thuật toán chấm điểm
+              gợi ý ứng viên phù hợp với chi phí tối ưu.
+            </p>
+            <div className="cta__actions">
+              <Link href="/register?role=employer">
+                <Button type="primary" size="large">
+                  Đăng ký Nhà tuyển dụng
+                </Button>
+              </Link>
+              <Link href="/chatbot">
+                <Button size="large" icon={<RobotOutlined />}>
+                  Thử trợ lý AI tìm việc
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

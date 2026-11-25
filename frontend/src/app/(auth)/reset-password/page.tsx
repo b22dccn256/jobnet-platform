@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Form, Input, Button, Card, Typography, message, Result } from 'antd';
-import { LockOutlined } from '@ant-design/icons';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Button, Form, Input, Result, message } from 'antd';
+import { LockOutlined } from '@ant-design/icons';
+import AuthShell from '@/components/common/AuthShell';
+import { getErrorMessage } from '@/lib/error';
 import { authService } from '@/services/auth.service';
-
-const { Title, Paragraph } = Typography;
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -17,18 +17,13 @@ function ResetPasswordForm() {
   const [success, setSuccess] = useState(false);
 
   const onFinish = async (values: { newPassword: string }) => {
-    if (!token) {
-      message.error('Mã xác thực không hợp lệ hoặc đã thiếu token!');
-      return;
-    }
     try {
       setLoading(true);
       await authService.resetPassword(token, values.newPassword);
       setSuccess(true);
       message.success('Đặt lại mật khẩu thành công!');
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.message || 'Mã xác thực đã hết hạn hoặc không hợp lệ';
-      message.error(errorMsg);
+    } catch (err) {
+      message.error(getErrorMessage(err, 'Mã xác thực không hợp lệ hoặc đã hết hạn'));
     } finally {
       setLoading(false);
     }
@@ -38,8 +33,8 @@ function ResetPasswordForm() {
     return (
       <Result
         status="warning"
-        title="Liên kết không hợp lệ"
-        subTitle="Không tìm thấy mã xác thực token trong liên kết. Vui lòng kiểm tra lại email hoặc yêu cầu liên kết mới."
+        title="Thiếu mã xác thực"
+        subTitle="Đường dẫn không hợp lệ. Vui lòng yêu cầu lại email đặt lại mật khẩu."
         extra={
           <Link href="/forgot-password">
             <Button type="primary">Yêu cầu lại</Button>
@@ -53,8 +48,8 @@ function ResetPasswordForm() {
     return (
       <Result
         status="success"
-        title="Đổi mật khẩu thành công!"
-        subTitle="Mật khẩu của bạn đã được cập nhật an toàn. Vui lòng đăng nhập với mật khẩu mới."
+        title="Đổi mật khẩu thành công"
+        subTitle="Vui lòng đăng nhập lại bằng mật khẩu mới của bạn."
         extra={
           <Button type="primary" onClick={() => router.push('/login')}>
             Đăng nhập ngay
@@ -66,9 +61,9 @@ function ResetPasswordForm() {
 
   return (
     <>
-      <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <Title level={3} style={{ marginBottom: 8, color: '#1e293b' }}>Thiết lập mật khẩu mới</Title>
-        <Paragraph type="secondary">Nhập mật khẩu mới an toàn cho tài khoản của bạn</Paragraph>
+      <div className="auth-card__head">
+        <h2 className="auth-card__title">Thiết lập mật khẩu mới</h2>
+        <p className="auth-card__subtitle">Nhập mật khẩu mới tối thiểu 6 ký tự</p>
       </div>
 
       <Form layout="vertical" onFinish={onFinish} requiredMark={false} size="large">
@@ -76,11 +71,11 @@ function ResetPasswordForm() {
           name="newPassword"
           label="Mật khẩu mới"
           rules={[
-            { required: true, message: 'Vui lòng nhập mật khẩu mới!' },
-            { min: 6, message: 'Mật khẩu phải từ 6 ký tự trở lên!' },
+            { required: true, message: 'Vui lòng nhập mật khẩu mới' },
+            { min: 6, message: 'Tối thiểu 6 ký tự' },
           ]}
         >
-          <Input.Password prefix={<LockOutlined style={{ color: '#94a3b8' }} />} placeholder="Tối thiểu 6 ký tự" />
+          <Input.Password prefix={<LockOutlined style={{ color: '#94a3b8' }} />} />
         </Form.Item>
 
         <Form.Item
@@ -88,25 +83,21 @@ function ResetPasswordForm() {
           label="Xác nhận mật khẩu"
           dependencies={['newPassword']}
           rules={[
-            { required: true, message: 'Vui lòng nhập lại mật khẩu!' },
+            { required: true, message: 'Vui lòng nhập lại mật khẩu' },
             ({ getFieldValue }) => ({
               validator(_, value) {
-                if (!value || getFieldValue('newPassword') === value) {
-                  return Promise.resolve();
-                }
-                return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
+                if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
+                return Promise.reject(new Error('Mật khẩu xác nhận không khớp'));
               },
             }),
           ]}
         >
-          <Input.Password prefix={<LockOutlined style={{ color: '#94a3b8' }} />} placeholder="Nhập lại mật khẩu mới" />
+          <Input.Password prefix={<LockOutlined style={{ color: '#94a3b8' }} />} />
         </Form.Item>
 
-        <Form.Item style={{ marginTop: 24 }}>
-          <Button type="primary" htmlType="submit" loading={loading} block style={{ height: 44 }}>
-            Lưu mật khẩu mới
-          </Button>
-        </Form.Item>
+        <Button type="primary" htmlType="submit" loading={loading} block size="large">
+          Cập nhật mật khẩu
+        </Button>
       </Form>
     </>
   );
@@ -114,12 +105,10 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 180px)', padding: 24 }}>
-      <Card style={{ width: 440, boxShadow: '0 4px 12px rgba(0,0,0,0.06)', borderRadius: 12 }}>
-        <Suspense fallback={<div>Đang tải...</div>}>
-          <ResetPasswordForm />
-        </Suspense>
-      </Card>
-    </div>
+    <AuthShell>
+      <Suspense fallback={<div>Đang tải...</div>}>
+        <ResetPasswordForm />
+      </Suspense>
+    </AuthShell>
   );
 }

@@ -20,8 +20,12 @@ import {
 import { User, UserSchema } from './modules/users/schemas/users.schema';
 
 function loadEnvFile() {
-  const envPath = path.resolve(__dirname, '../.env');
-  if (!fs.existsSync(envPath)) return;
+  const candidates = [
+    path.resolve(__dirname, '../.env'),
+    path.resolve(__dirname, '../../.env'),
+  ];
+  const envPath = candidates.find((p) => fs.existsSync(p));
+  if (!envPath) return;
   const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
   for (const line of lines) {
     const trimmed = line.trim();

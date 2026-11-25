@@ -58,19 +58,37 @@ export class SearchService implements OnModuleInit {
     if (!exists) {
       await this.client.indices.create({
         index: this.index,
+        settings: {
+          analysis: {
+            char_filter: {
+              vn_d_filter: {
+                type: 'mapping',
+                mappings: ['đ => d', 'Đ => d'],
+              },
+            },
+            analyzer: {
+              vn_folding: {
+                type: 'custom',
+                char_filter: ['vn_d_filter'],
+                tokenizer: 'standard',
+                filter: ['lowercase', 'asciifolding'],
+              },
+            },
+          },
+        },
         mappings: {
           properties: {
-            title: { type: 'text', fields: { keyword: { type: 'keyword' } } },
-            description: { type: 'text' },
-            requirements: { type: 'text' },
-            skills: { type: 'text', fields: { keyword: { type: 'keyword' } } },
-            location: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+            title: { type: 'text', analyzer: 'vn_folding', fields: { keyword: { type: 'keyword' } } },
+            description: { type: 'text', analyzer: 'vn_folding' },
+            requirements: { type: 'text', analyzer: 'vn_folding' },
+            skills: { type: 'text', analyzer: 'vn_folding', fields: { keyword: { type: 'keyword' } } },
+            location: { type: 'text', analyzer: 'vn_folding', fields: { keyword: { type: 'keyword' } } },
             workMode: { type: 'keyword' },
             level: { type: 'keyword' },
             categoryId: { type: 'keyword' },
-            categoryName: { type: 'text' },
+            categoryName: { type: 'text', analyzer: 'vn_folding' },
             companyId: { type: 'keyword' },
-            companyName: { type: 'text', fields: { keyword: { type: 'keyword' } } },
+            companyName: { type: 'text', analyzer: 'vn_folding', fields: { keyword: { type: 'keyword' } } },
             companyLogo: { type: 'keyword', index: false },
             salaryMin: { type: 'integer' },
             salaryMax: { type: 'integer' },

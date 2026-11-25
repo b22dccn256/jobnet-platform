@@ -1,6 +1,19 @@
 import { api } from '@/lib/axios';
+import type { Job } from '@/types';
 
-// TODO: các hàm gọi API nhóm `/chatbot` (xem docs/API.md)
+export interface ChatTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatResponse {
+  mode?: string;
+  reply: string;
+  filters?: Record<string, unknown>;
+  jobs: Job[];
+}
+
 export const chatbotService = {
-  ping: () => api.get('/chatbot'),
+  chat: (message: string, history: ChatTurn[] = []) =>
+    api.post<ChatResponse>('/chatbot/chat', { message, history }).then((res) => res.data),
 };

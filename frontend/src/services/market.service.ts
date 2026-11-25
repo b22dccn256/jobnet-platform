@@ -1,6 +1,7 @@
 import { api } from '@/lib/axios';
+import type { MarketOverview } from '@/types';
 
-// TODO: các hàm gọi API nhóm `/market-insights` (xem docs/API.md)
 export const marketService = {
-  ping: () => api.get('/market-insights'),
+  getOverview: () =>
+    api.get<MarketOverview>('/market-insights/overview').then((res) => res.data),
 };

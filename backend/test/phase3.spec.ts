@@ -201,10 +201,13 @@ describe('Phase 3 VNPay Payments', () => {
       markFailed: async () => ({ ...orderState, paymentStatus: 'failed' }),
     };
 
+    const packageService = {
+      findOne: async () => ({ _id: 'pkg1', price: 699000, durationDays: 30, postLimit: 15 }),
+    };
     const service = new PaymentService(
       cfg as never,
       {} as never,
-      {} as never,
+      packageService as never,
       recruiterPremiumService as never,
     );
 
@@ -217,6 +220,17 @@ describe('Phase 3 VNPay Payments', () => {
 
     await assert.rejects(
       () => service.handleVnpayReturn({ ...params, vnp_SecureHash: 'tampered_hash' }),
+      BadRequestException,
+    );
+
+    const wrongAmountParams = { ...params, vnp_Amount: '100000' };
+    const wrongSigned = service.signParams(wrongAmountParams, secret);
+    await assert.rejects(
+      () =>
+        service.handleVnpayReturn({
+          ...wrongAmountParams,
+          vnp_SecureHash: wrongSigned.secureHash,
+        }),
       BadRequestException,
     );
 

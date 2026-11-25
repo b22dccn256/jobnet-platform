@@ -19,6 +19,36 @@ export class MarketInsightService {
     @InjectModel(Job.name) private readonly jobModel: Model<JobDocument>,
   ) {}
 
+  private computeMedian(values?: number[]): number {
+    if (!values || values.length === 0) return 0;
+    const sorted = [...values].filter((n) => typeof n === 'number' && !Number.isNaN(n)).sort((a, b) => a - b);
+    if (sorted.length === 0) return 0;
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 1
+      ? Math.round(sorted[mid])
+      : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+  }
+
+  private formatSalaryRows(
+    rows: Array<{
+      _id: string;
+      avgMin?: number;
+      avgMax?: number;
+      minValues?: number[];
+      maxValues?: number[];
+      count: number;
+    }>,
+  ) {
+    return rows.map((row) => ({
+      _id: row._id,
+      avgMin: Math.round(row.avgMin || 0),
+      avgMax: Math.round(row.avgMax || 0),
+      medianMin: row.minValues ? this.computeMedian(row.minValues) : Math.round(row.avgMin || 0),
+      medianMax: row.maxValues ? this.computeMedian(row.maxValues) : Math.round(row.avgMax || 0),
+      count: row.count,
+    }));
+  }
+
   create(dto: CreateMarketInsightDto) {
     return this.model.create({ ...dto, generatedAt: new Date() });
   }
@@ -45,7 +75,7 @@ export class MarketInsightService {
   async computeLiveInsights() {
     const scrapedCount = await this.scrapedJobModel.countDocuments();
     if (scrapedCount > 0) {
-      const [salary, skills, demand] = await Promise.all([
+      const [rawSalary, skills, demand] = await Promise.all([
         this.scrapedJobModel.aggregate([
           { $match: { salaryMin: { $ne: null }, salaryMax: { $ne: null } } },
           {
@@ -53,6 +83,8 @@ export class MarketInsightService {
               _id: { $ifNull: ['$category', 'Khác'] },
               avgMin: { $avg: '$salaryMin' },
               avgMax: { $avg: '$salaryMax' },
+              minValues: { $push: '$salaryMin' },
+              maxValues: { $push: '$salaryMax' },
               count: { $sum: 1 },
             },
           },
@@ -75,11 +107,11 @@ export class MarketInsightService {
           { $sort: { _id: 1 } },
         ]),
       ]);
-      return { source: 'scraped_jobs', salary, skills, demand };
+      return { source: 'scraped_jobs', salary: this.formatSalaryRows(rawSalary), skills, demand };
     }
 
     // Fallback: tổng hợp từ tin đã duyệt nội bộ nếu chưa chạy Crawler
-    const [salary, skills, demand] = await Promise.all([
+    const [rawSalary, skills, demand] = await Promise.all([
       this.jobModel.aggregate([
         { $match: { status: JobStatus.Approved, salaryMin: { $ne: null }, salaryMax: { $ne: null } } },
         {
@@ -96,6 +128,8 @@ export class MarketInsightService {
             _id: { $ifNull: ['$catInfo.name', 'Khác'] },
             avgMin: { $avg: '$salaryMin' },
             avgMax: { $avg: '$salaryMax' },
+            minValues: { $push: '$salaryMin' },
+            maxValues: { $push: '$salaryMax' },
             count: { $sum: 1 },
           },
         },
@@ -120,7 +154,7 @@ export class MarketInsightService {
       ]),
     ]);
 
-    return { source: 'jobs', salary, skills, demand };
+    return { source: 'jobs', salary: this.formatSalaryRows(rawSalary), skills, demand };
   }
 
   async recalculate() {

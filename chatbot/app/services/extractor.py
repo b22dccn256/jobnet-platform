@@ -78,6 +78,12 @@ def _extract_salary_min(norm_text: str) -> int | None:
         amount = int(m.group(1))
         if 1 <= amount <= 300:
             return amount * 1_000_000
+    # Hỗ trợ cả mức lương theo giờ/ngày dạng "25 nghin", "30k" (ví dụ Mục 1.2.1)
+    k = re.search(r"(\d{1,4})\s*(?:nghin|ngan|k)\b", norm_text)
+    if k:
+        amount_k = int(k.group(1))
+        if 10 <= amount_k <= 9999:
+            return amount_k * 1_000
     return None
 
 

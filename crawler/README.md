@@ -6,7 +6,7 @@ Thu thập tin tuyển dụng **công khai** → `scraped_jobs`, sau đó tổng
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env            # điền START_URLS và MONGO_URI
+# Điền START_URLS và MONGO_URI trong file .env ở thư mục gốc dự án
 scrapy crawl public_jobs        # cào dữ liệu
 python -m analytics.aggregate   # tổng hợp lương trung bình, kỹ năng hot, xu hướng
 ```

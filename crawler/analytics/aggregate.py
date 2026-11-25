@@ -4,11 +4,35 @@ Chạy: python -m analytics.aggregate
 """
 import os
 from datetime import datetime, timezone
+from pathlib import Path
+from statistics import median
 
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-load_dotenv()
+_CRAWLER_DIR = Path(__file__).resolve().parents[1]
+load_dotenv(_CRAWLER_DIR.parent / ".env")
+load_dotenv(_CRAWLER_DIR / ".env", override=True)
+
+
+def _format_salary_rows(rows: list[dict]) -> list[dict]:
+    formatted = []
+    for r in rows:
+        mins = [x for x in (r.get("minValues") or []) if isinstance(x, (int, float))]
+        maxs = [x for x in (r.get("maxValues") or []) if isinstance(x, (int, float))]
+        avg_min = round(r.get("avgMin") or 0)
+        avg_max = round(r.get("avgMax") or 0)
+        formatted.append(
+            {
+                "_id": r.get("_id") or "Khác",
+                "avgMin": avg_min,
+                "avgMax": avg_max,
+                "medianMin": round(median(mins)) if mins else avg_min,
+                "medianMax": round(median(maxs)) if maxs else avg_max,
+                "count": r.get("count", 0),
+            }
+        )
+    return formatted
 
 
 def aggregate_market_insights(db) -> dict:
@@ -25,6 +49,8 @@ def aggregate_market_insights(db) -> dict:
                     "_id": {"$ifNull": ["$category", "Khác"]},
                     "avgMin": {"$avg": "$salaryMin"},
                     "avgMax": {"$avg": "$salaryMax"},
+                    "minValues": {"$push": "$salaryMin"},
+                    "maxValues": {"$push": "$salaryMax"},
                     "count": {"$sum": 1},
                 }
             },
@@ -65,6 +91,8 @@ def aggregate_market_insights(db) -> dict:
                     "_id": {"$ifNull": ["$catInfo.name", "Khác"]},
                     "avgMin": {"$avg": "$salaryMin"},
                     "avgMax": {"$avg": "$salaryMax"},
+                    "minValues": {"$push": "$salaryMin"},
+                    "maxValues": {"$push": "$salaryMax"},
                     "count": {"$sum": 1},
                 }
             },
@@ -89,7 +117,7 @@ def aggregate_market_insights(db) -> dict:
         ]
         source_name = "jobs"
 
-    salary = list(source_col.aggregate(salary_pipeline))
+    salary = _format_salary_rows(list(source_col.aggregate(salary_pipeline)))
     skills = list(source_col.aggregate(skills_pipeline))
     demand = list(source_col.aggregate(demand_pipeline))
 

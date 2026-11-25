@@ -160,6 +160,12 @@ export class PaymentService {
       };
     }
 
+    const pkg = await this.packageService.findOne(String(order.package));
+    const expectedAmount = Math.round(pkg.price * 100);
+    if (query.vnp_Amount !== undefined && Number(query.vnp_Amount) !== expectedAmount) {
+      throw new BadRequestException('Số tiền thanh toán VNPay không khớp với giá gói dịch vụ');
+    }
+
     const isSuccess =
       query.vnp_ResponseCode === '00' &&
       (!query.vnp_TransactionStatus || query.vnp_TransactionStatus === '00');
@@ -174,7 +180,6 @@ export class PaymentService {
       };
     }
 
-    const pkg = await this.packageService.findOne(String(order.package));
     const activated = await this.recruiterPremiumService.activateOrder(
       order._id,
       pkg.durationDays || 30,
@@ -197,6 +202,9 @@ export class PaymentService {
     } catch (error) {
       if (error instanceof NotFoundException) {
         return { RspCode: '01', Message: 'Order not found' };
+      }
+      if (error instanceof BadRequestException && error.message.includes('Số tiền')) {
+        return { RspCode: '04', Message: 'Invalid amount' };
       }
       return { RspCode: '97', Message: 'Invalid signature or request' };
     }

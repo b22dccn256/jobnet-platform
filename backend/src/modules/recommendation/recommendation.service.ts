@@ -28,6 +28,7 @@ export interface CandidateProfileBundle {
     fullName?: string;
     phone?: string;
     avatar?: string;
+    isVerified?: boolean;
     bio?: string;
     skills?: string[];
     desiredTitle?: string;
@@ -262,13 +263,13 @@ export class RecommendationService {
       }
     }
 
-    // 9. Chất lượng hồ sơ (5 điểm)
+    // 9. Chất lượng hồ sơ (5 điểm – theo Bảng 1.1: ảnh đại diện, mô tả cá nhân, xác thực tài khoản, kinh nghiệm, kỹ năng/học vấn)
     const qualityChecks = [
+      Boolean(user.avatar),
       Boolean(user.bio),
-      Boolean(user.phone),
-      Boolean(user.skills && user.skills.length > 0),
-      educations.length > 0,
+      Boolean(user.isVerified),
       workExperiences.length > 0 || projects.length > 0,
+      Boolean(user.skills && user.skills.length > 0) && educations.length > 0,
     ];
     const profileQualityScore = qualityChecks.filter(Boolean).length;
 
@@ -305,7 +306,7 @@ export class RecommendationService {
     const users = await this.userModel
       .find(userFilter)
       .select(
-        'email fullName phone avatar bio skills desiredTitle desiredLevel desiredSalaryMin desiredLocation cvUrl',
+        'email fullName phone avatar isVerified bio skills desiredTitle desiredLevel desiredSalaryMin desiredLocation cvUrl',
       )
       .lean()
       .exec();

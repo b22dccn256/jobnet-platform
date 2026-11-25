@@ -60,6 +60,9 @@ class ChatbotServicesTest(unittest.TestCase):
         self.assertEqual(filters["level"], "junior")
         self.assertEqual(filters["salary_min"], 15_000_000)
 
+        hourly = extract_filters("tìm việc part-time phục vụ lương trên 25 nghìn một giờ")
+        self.assertEqual(hourly["salary_min"], 25_000)
+
     def test_build_mongo_query_includes_approved_and_filters(self):
         query = build_mongo_query(
             {
