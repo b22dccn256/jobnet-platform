@@ -142,6 +142,61 @@ export class SearchService implements OnModuleInit {
       this.logger.log(`Created Elasticsearch index "${this.index}"`);
     }
     this.esAvailable = true;
+    await this.syncIfIndexEmpty();
+  }
+
+  private async syncIfIndexEmpty() {
+    try {
+      const countRes = await this.client.count({ index: this.index });
+      if (countRes.count === 0) {
+        const res = await this.syncApprovedFromMongo();
+        if (res.indexed > 0) {
+          this.logger.log(
+            `Auto-synced ${res.indexed} approved jobs from MongoDB into Elasticsearch`,
+          );
+        }
+      }
+    } catch {
+      // Ignore auto-sync errors during startup check
+    }
+  }
+
+  private async syncApprovedFromMongo() {
+    const docs = await this.connection
+      .collection('jobs')
+      .find({ status: JobStatus.Approved })
+      .toArray();
+    if (docs.length === 0) return { indexed: 0 };
+
+    const companyIds = Array.from(
+      new Set(
+        docs
+          .map((item) => item.company)
+          .filter((c): c is Types.ObjectId => c instanceof Types.ObjectId),
+      ),
+    );
+    let companyMap = new Map<string, { _id: Types.ObjectId; name?: string; logo?: string }>();
+    if (companyIds.length > 0) {
+      const companies = await this.connection
+        .collection('companies')
+        .find({ _id: { $in: companyIds } })
+        .project<{ _id: Types.ObjectId; name?: string; logo?: string }>({ name: 1, logo: 1 })
+        .toArray();
+      companyMap = new Map(companies.map((c) => [String(c._id), c]));
+    }
+
+    for (const job of docs) {
+      const comp =
+        job.company instanceof Types.ObjectId ? companyMap.get(String(job.company)) : null;
+      const enriched = comp ? { ...job, company: comp } : job;
+      await this.client.index({
+        index: this.index,
+        id: String(job._id),
+        document: this.toEsDocument(enriched),
+        refresh: true,
+      });
+    }
+    return { indexed: docs.length };
   }
 
   private toEsDocument(job: IndexedJobPayload) {
@@ -217,14 +272,7 @@ export class SearchService implements OnModuleInit {
 
   async reindexAllApproved() {
     await this.ensureIndex();
-    const docs = await this.connection
-      .collection('jobs')
-      .find({ status: JobStatus.Approved })
-      .toArray();
-    for (const job of docs) {
-      await this.indexJob(job);
-    }
-    return { indexed: docs.length };
+    return this.syncApprovedFromMongo();
   }
 
   async searchJobs(q: string, filters: SearchJobsDto) {

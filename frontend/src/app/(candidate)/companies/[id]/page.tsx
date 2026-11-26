@@ -48,6 +48,7 @@ export default function CompanyDetailPage({ params }: { params: { id: string } }
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['followingCompany', params.id] });
       queryClient.invalidateQueries({ queryKey: ['followersCount', params.id] });
+      queryClient.invalidateQueries({ queryKey: ['followedCompanies'] });
       message.success(followState?.following ? 'Đã bỏ theo dõi công ty' : 'Đã theo dõi công ty');
     },
     onError: (err) => message.error(getErrorMessage(err, 'Không thể thực hiện')),

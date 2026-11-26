@@ -7,6 +7,7 @@ import { Button, Divider, Form, Input, message } from 'antd';
 import { LockOutlined, MailOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import AuthShell from '@/components/common/AuthShell';
+import { startRouteProgress } from '@/components/common/RouteProgressBar';
 import { getErrorMessage } from '@/lib/error';
 import { HOME_BY_ROLE } from '@/lib/format';
 import { authService, type LoginPayload } from '@/services/auth.service';
@@ -38,7 +39,9 @@ export default function LoginPage() {
       }
 
       message.success('Đăng nhập thành công!');
-      router.push(HOME_BY_ROLE[data.user.role] || '/jobs');
+      const target = HOME_BY_ROLE[data.user.role] || '/jobs';
+      startRouteProgress(target);
+      router.push(target);
     } catch (err) {
       message.error(getErrorMessage(err, 'Email hoặc mật khẩu không chính xác'));
     } finally {

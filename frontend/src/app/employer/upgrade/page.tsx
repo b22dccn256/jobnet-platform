@@ -81,7 +81,7 @@ export default function EmployerUpgradePage() {
 
               <div className="pricing-card__foot">
                 <Button
-                  type={isFeatured ? 'primary' : 'default'}
+                  type="default"
                   block
                   size="large"
                   loading={payMutation.isPending}

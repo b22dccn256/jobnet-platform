@@ -16,6 +16,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import JobCardItem from '@/components/common/JobCardItem';
+import { startRouteProgress } from '@/components/common/RouteProgressBar';
 import { jobsService } from '@/services/jobs.service';
 
 const HOT_KEYWORDS = ['TypeScript', 'NestJS', 'React', 'Next.js', 'Python', 'UI/UX'];
@@ -39,7 +40,9 @@ export default function HomePage() {
     const params = new URLSearchParams();
     if (searchTerm.trim()) params.set('q', searchTerm.trim());
     if (selectedLocation) params.set('location', selectedLocation);
-    router.push(`/jobs?${params.toString()}`);
+    const target = `/jobs?${params.toString()}`;
+    startRouteProgress(target);
+    router.push(target);
   };
 
   return (
@@ -103,7 +106,11 @@ export default function HomePage() {
                 key={kw}
                 type="button"
                 className="keyword-chip"
-                onClick={() => router.push(`/jobs?q=${encodeURIComponent(kw)}`)}
+                onClick={() => {
+                  const target = `/jobs?q=${encodeURIComponent(kw)}`;
+                  startRouteProgress(target);
+                  router.push(target);
+                }}
               >
                 {kw}
               </button>

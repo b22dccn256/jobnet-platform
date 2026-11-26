@@ -21,6 +21,7 @@ import {
 import type { RootState } from '@/store';
 import { logout } from '@/store/authSlice';
 import { ROLE_LABEL } from '@/lib/format';
+import { startRouteProgress, usePendingPath } from '@/components/common/RouteProgressBar';
 import type { UserRole } from '@/types';
 
 interface NavItem {
@@ -41,7 +42,7 @@ const ROLE_LINKS: Record<UserRole, NavItem[]> = {
     { href: '/cv', label: 'Hồ sơ CV của tôi', icon: <FileTextOutlined /> },
     { href: '/recommended', label: 'Việc làm gợi ý', icon: <SearchOutlined /> },
     { href: '/applied', label: 'Việc đã ứng tuyển', icon: <CheckCircleOutlined /> },
-    { href: '/saved', label: 'Việc đã lưu', icon: <HeartOutlined /> },
+    { href: '/saved', label: 'Việc & Công ty đã lưu', icon: <HeartOutlined /> },
   ],
   employer: [
     { href: '/employer/dashboard', label: 'Bảng điều khiển', icon: <DashboardOutlined /> },
@@ -56,6 +57,8 @@ function isActivePath(pathname: string, href: string) {
 
 export default function AppHeader() {
   const pathname = usePathname();
+  const pendingPath = usePendingPath();
+  const activePathname = pendingPath || pathname;
   const router = useRouter();
   const dispatch = useDispatch();
   const { user, accessToken, hydrated } = useSelector((state: RootState) => state.auth);
@@ -91,6 +94,7 @@ export default function AppHeader() {
 
   const go = (href: string) => {
     setDrawerOpen(false);
+    startRouteProgress(href);
     router.push(href);
   };
 
@@ -124,7 +128,7 @@ export default function AppHeader() {
               key={item.href}
               href={item.href}
               onMouseEnter={() => router.prefetch(item.href)}
-              className={`site-nav__link${isActivePath(pathname, item.href) ? ' is-active' : ''}`}
+              className={`site-nav__link${isActivePath(activePathname, item.href) ? ' is-active' : ''}`}
             >
               {item.icon}
               <span>{item.label}</span>
@@ -205,7 +209,7 @@ export default function AppHeader() {
               key={item.href}
               href={item.href}
               onClick={() => setDrawerOpen(false)}
-              className={`drawer-nav__link${isActivePath(pathname, item.href) ? ' is-active' : ''}`}
+              className={`drawer-nav__link${isActivePath(activePathname, item.href) ? ' is-active' : ''}`}
             >
               {item.icon}
               <span>{item.label}</span>

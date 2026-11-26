@@ -9,6 +9,7 @@ import {
   CrownOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
+import { usePendingPath } from '@/components/common/RouteProgressBar';
 
 const ITEMS = [
   { href: '/admin/reports', label: 'Báo cáo & Doanh thu', icon: <BarChartOutlined /> },
@@ -19,6 +20,8 @@ const ITEMS = [
 
 export default function AdminNav() {
   const pathname = usePathname();
+  const pendingPath = usePendingPath();
+  const activePath = pendingPath || pathname;
   const router = useRouter();
 
   return (
@@ -30,7 +33,7 @@ export default function AdminNav() {
             href={item.href}
             prefetch={true}
             onMouseEnter={() => router.prefetch(item.href)}
-            className={`site-nav__link${pathname === item.href ? ' is-active' : ''}`}
+            className={`site-nav__link${activePath === item.href ? ' is-active' : ''}`}
           >
             {item.icon}
             <span>{item.label}</span>

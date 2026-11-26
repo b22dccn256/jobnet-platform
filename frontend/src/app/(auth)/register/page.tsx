@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { useDispatch } from 'react-redux';
 import AuthShell from '@/components/common/AuthShell';
+import { startRouteProgress } from '@/components/common/RouteProgressBar';
 import { getErrorMessage } from '@/lib/error';
 import { HOME_BY_ROLE } from '@/lib/format';
 import { authService, type RegisterPayload } from '@/services/auth.service';
@@ -46,7 +47,9 @@ function RegisterFormContent() {
         );
       }
       message.success('Đăng ký tài khoản thành công!');
-      router.push(HOME_BY_ROLE[role]);
+      const target = HOME_BY_ROLE[role];
+      startRouteProgress(target);
+      router.push(target);
     } catch (err) {
       message.error(getErrorMessage(err, 'Đăng ký thất bại, email có thể đã tồn tại'));
     } finally {

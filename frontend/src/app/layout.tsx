@@ -3,7 +3,7 @@ import { AntdRegistry } from '@ant-design/nextjs-registry';
 import Providers from '@/providers/Providers';
 import AppHeader from '@/components/common/Header';
 import AppFooter from '@/components/common/Footer';
-import RouteProgressBar from '@/components/common/RouteProgressBar';
+import RouteProgressBar, { RouteMainShell } from '@/components/common/RouteProgressBar';
 import FloatingChatWidget from '@/components/common/FloatingChatWidget';
 import './globals.css';
 
@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Providers>
             <RouteProgressBar />
             <AppHeader />
-            <main className="site-main">{children}</main>
+            <RouteMainShell>{children}</RouteMainShell>
             <AppFooter />
             <FloatingChatWidget />
           </Providers>

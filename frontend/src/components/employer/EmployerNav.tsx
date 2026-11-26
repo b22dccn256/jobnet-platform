@@ -13,6 +13,7 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
+import { usePendingPath } from '@/components/common/RouteProgressBar';
 import type { RootState } from '@/store';
 
 const ITEMS = [
@@ -26,6 +27,8 @@ const ITEMS = [
 
 export default function EmployerNav() {
   const pathname = usePathname();
+  const pendingPath = usePendingPath();
+  const activePath = pendingPath || pathname;
   const router = useRouter();
   const company = useSelector((state: RootState) => state.auth.company);
   const [mounted, setMounted] = useState(false);
@@ -40,9 +43,9 @@ export default function EmployerNav() {
         {ITEMS.map((item) => {
           const active =
             item.href === '/employer/jobs'
-              ? pathname === '/employer/jobs' ||
-                (pathname.startsWith('/employer/jobs/') && pathname !== '/employer/jobs/new')
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
+              ? activePath === '/employer/jobs' ||
+                (activePath.startsWith('/employer/jobs/') && activePath !== '/employer/jobs/new')
+              : activePath === item.href || activePath.startsWith(`${item.href}/`);
           return (
             <Link
               key={item.href}
